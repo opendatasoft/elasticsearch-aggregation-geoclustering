@@ -1,0 +1,186 @@
+---
+setup:
+
+  - do:
+      indices.create:
+        index: test
+        body:
+          settings:
+            number_of_shards: 3
+          mappings:
+            test:
+              "properties":
+                "point":
+                  "type": "geo_point"
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     1
+        body:   { "point": [2.454929, 48.821578]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     2
+        body:   { "point": [2.245858, 48.86914]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     3
+        body:   { "point": [2.240358, 48.863481]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     4
+        body:   { "point": [2.25292, 48.847176]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     5
+        body:   { "point": [2.279111, 48.872383]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     6
+        body:   { "point": [2.336267, 48.822021]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     7
+        body:   { "point": [2.338677, 48.822672]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     8
+        body:   { "point": [2.336643, 48.822493]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     9
+        body:   { "point": [2.438465, 48.84204]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     10
+        body:   { "point": [2.381554, 48.835382]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     11
+        body:   { "point": [2.407744, 48.83733]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     12
+        body:   { "point": [2.34521, 48.849358]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     13
+        body:   { "point": [2.252938, 48.846041]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     14
+        body:   { "point": [2.279715, 48.871775]}
+
+  - do:
+      index:
+        index:  test
+        type:   test
+        id:     15
+        body:   { "point": [2.380629, 48.879757]}
+
+  - do:
+      indices.refresh:
+        index: [test]
+
+  - do:
+      cluster.health:
+        wait_for_status: yellow
+
+---
+
+"Test Zoom 1":
+
+  - do:
+      search:
+        index: test
+        body: {"aggs": { "gc" : { "geo_point_clustering": {"field": "point", "zoom": 1} } } }
+
+
+  - match: { hits.total: 15 }
+  - length: { aggregations.gc.buckets: 1 }
+  - match: { aggregations.gc.buckets.0.doc_count: 15 }
+  - match: { aggregations.gc.buckets.0.centroid.lat: 48.8468417795375 }
+  - match: { aggregations.gc.buckets.0.centroid.lon: 2.331401154398918 }
+
+
+---
+
+"Test Zoom 9":
+
+  - do:
+      search:
+        index: test
+        body: {"aggs": { "gc" : { "geo_point_clustering": {"field": "point", "zoom": 9} } } }
+
+
+  - match: { hits.total: 15 }
+  - length: { aggregations.gc.buckets: 2 }
+  - match: { aggregations.gc.buckets.0.doc_count: 9 }
+  - match: { aggregations.gc.buckets.0.centroid.lat: 48.83695897646248 }
+  - match: { aggregations.gc.buckets.0.centroid.lon: 2.380013056099415 }
+  - match: { aggregations.gc.buckets.1.doc_count: 6 }
+  - match: { aggregations.gc.buckets.1.centroid.lat: 48.86166598415002 }
+  - match: { aggregations.gc.buckets.1.centroid.lon: 2.258483301848173 }
+
+
+---
+
+"Test Zoom 15":
+
+  - do:
+      search:
+        index: test
+        body: {"aggs": { "gc" : { "geo_point_clustering": {"field": "point", "zoom": 15} } } }
+
+
+  - match: { hits.total: 15 }
+  - length: { aggregations.gc.buckets: 13 }
+  - match: { aggregations.gc.buckets.0.doc_count: 1 }
+  - match: { aggregations.gc.buckets.0.centroid.lat: 48.879756960086524 }
+  - match: { aggregations.gc.buckets.0.centroid.lon: 2.380628976970911 }
+  - match: { aggregations.gc.buckets.1.doc_count: 2 }
+  - match: { aggregations.gc.buckets.1.centroid.lat: 48.87207899009809 }
+  - match: { aggregations.gc.buckets.1.centroid.lon: 2.2794129699468613 }
+  - match: { aggregations.gc.buckets.9.doc_count: 2 }
+  - match: { aggregations.gc.buckets.9.centroid.lat: 48.82225697860122 }
+  - match: { aggregations.gc.buckets.9.centroid.lon: 2.3364549223333597 }
