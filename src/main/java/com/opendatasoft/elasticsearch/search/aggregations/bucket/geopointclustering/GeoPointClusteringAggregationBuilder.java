@@ -63,6 +63,22 @@ public class GeoPointClusteringAggregationBuilder extends
         super(name, ValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
     }
 
+    protected GeoPointClusteringAggregationBuilder(
+            GeoPointClusteringAggregationBuilder clone, Builder factoriesBuilder, Map<String, Object> metaData) {
+        super(clone, factoriesBuilder, metaData);
+        this.zoom = clone.zoom;
+        this.radius = clone.radius;
+        this.extent = clone.extent;
+        this.ratio = clone.ratio;
+        this.requiredSize = clone.requiredSize;
+        this.shardSize = clone.shardSize;
+    }
+
+    @Override
+    protected AggregationBuilder shallowCopy(Builder factoriesBuilder, Map<String, Object> metaData) {
+        return new GeoPointClusteringAggregationBuilder(this, factoriesBuilder, metaData);
+    }
+
     /**
      * Read from a stream.
      */
