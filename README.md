@@ -70,15 +70,15 @@ Plugin versions are available for (at least) all minor versions of Elasticsearch
 The first 3 digits of plugin version is Elasticsearch versioning. The last digit is used for plugin versioning under an elasticsearch version.
 
 To install it, launch this command in Elasticsearch directory replacing the url by the correct link for your Elasticsearch version (see table)
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/6.4.0.0/geopoint-clustering-aggregation-6.4.0.0.zip`
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.4.0.0/geopoint-clustering-aggregation-6.4.0.0.zip`
 
 | elasticsearch version | plugin version | plugin url |
 | --------------------- | -------------- | ---------- |
-| 6.0.1 | 6.0.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/6.0.1.0/geopoint-clustering-aggregation-6.0.1.0.zip|
-| 6.1.4 | 6.1.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/6.1.4.0/geopoint-clustering-aggregation-6.1.4.0.zip|
-| 6.2.4 | 6.2.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/6.2.4.0/geopoint-clustering-aggregation-6.2.4.0.zip|
-| 6.3.2 | 6.3.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/6.3.2.0/geopoint-clustering-aggregation-6.3.2.0.zip|
-| 6.4.0 | 6.4.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/6.4.0.0/geopoint-clustering-aggregation-6.4.0.0.zip|
+| 6.0.1 | 6.0.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.0.1.0/geopoint-clustering-aggregation-6.0.1.0.zip|
+| 6.1.4 | 6.1.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.1.4.0/geopoint-clustering-aggregation-6.1.4.0.zip|
+| 6.2.4 | 6.2.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.2.4.0/geopoint-clustering-aggregation-6.2.4.0.zip|
+| 6.3.2 | 6.3.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.3.2.0/geopoint-clustering-aggregation-6.3.2.0.zip|
+| 6.4.0 | 6.4.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.4.0.0/geopoint-clustering-aggregation-6.4.0.0.zip|
  
 
 License
