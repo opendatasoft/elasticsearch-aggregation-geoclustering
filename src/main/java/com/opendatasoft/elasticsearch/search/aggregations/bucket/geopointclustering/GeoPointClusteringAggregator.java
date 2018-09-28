@@ -4,7 +4,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.elasticsearch.common.geo.GeoHashUtils;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.lease.Releasables;
-import org.elasticsearch.common.util.LongArray;
 import org.elasticsearch.common.util.LongHash;
 import org.elasticsearch.common.util.ObjectArray;
 import org.elasticsearch.index.fielddata.MultiGeoPointValues;
