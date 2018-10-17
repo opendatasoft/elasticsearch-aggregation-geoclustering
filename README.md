@@ -9,7 +9,7 @@ Then it merges these cells if the distance between two clusters' centers is lowe
 {
   "aggregations": {
     "<aggregation_name>": {
-      "geohash_clustering": {
+      "geo_point_clustering": {
         "field": "<field_name>",
         "zoom": "<zoom>"
       }
@@ -30,7 +30,7 @@ For example :
 {
     "aggregations" : {
         "my_cluster_aggregation" : {
-            "geohash_clustering": {
+            "geo_point_clustering": {
                 "field": "geo_point",
                 "zoom": 1,
                 "distance": 50
