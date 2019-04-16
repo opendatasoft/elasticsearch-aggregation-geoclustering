@@ -70,12 +70,6 @@ Plugin versions are available for (at least) all minor versions of Elasticsearch
 The first 3 digits of plugin version is Elasticsearch versioning. The last digit is used for plugin versioning under an elasticsearch version.
 
 To install it, launch this command in Elasticsearch directory replacing the url by the correct link for your Elasticsearch version (see table)
-<<<<<<< HEAD
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.0.0.0/geopoint-clustering-aggregation-7.0.0.0.zip`
-=======
-<<<<<<< HEAD
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.7.1.0/geopoint-clustering-aggregation-6.7.1.0.zip`
-=======
 `./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.0.0.0/geopoint-clustering-aggregation-7.0.0.0.zip`
 
 | elasticsearch version | plugin version | plugin url |
