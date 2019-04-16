@@ -77,8 +77,6 @@ To install it, launch this command in Elasticsearch directory replacing the url 
 `./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.7.1.0/geopoint-clustering-aggregation-6.7.1.0.zip`
 =======
 `./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.0.0.0/geopoint-clustering-aggregation-7.0.0.0.zip`
->>>>>>> Migrate plugin to elasticsearch 7.0.0
->>>>>>> master
 
 | elasticsearch version | plugin version | plugin url |
 | --------------------- | -------------- | ---------- |
