@@ -8,113 +8,97 @@ setup:
           settings:
             number_of_shards: 3
           mappings:
-            test:
-              "properties":
-                "point":
-                  "type": "geo_point"
+            "properties":
+              "point":
+                "type": "geo_point"
 
   - do:
       index:
         index:  test
-        type:   test
         id:     1
         body:   { "point": [2.454929, 48.821578]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     2
         body:   { "point": [2.245858, 48.86914]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     3
         body:   { "point": [2.240358, 48.863481]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     4
         body:   { "point": [2.25292, 48.847176]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     5
         body:   { "point": [2.279111, 48.872383]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     6
         body:   { "point": [2.336267, 48.822021]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     7
         body:   { "point": [2.338677, 48.822672]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     8
         body:   { "point": [2.336643, 48.822493]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     9
         body:   { "point": [2.438465, 48.84204]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     10
         body:   { "point": [2.381554, 48.835382]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     11
         body:   { "point": [2.407744, 48.83733]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     12
         body:   { "point": [2.34521, 48.849358]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     13
         body:   { "point": [2.252938, 48.846041]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     14
         body:   { "point": [2.279715, 48.871775]}
 
   - do:
       index:
         index:  test
-        type:   test
         id:     15
         body:   { "point": [2.380629, 48.879757]}
 
@@ -132,6 +116,7 @@ setup:
 
   - do:
       search:
+        rest_total_hits_as_int: true
         index: test
         body: {"aggs": { "gc" : { "geo_point_clustering": {"field": "point", "zoom": 1} } } }
 
@@ -149,6 +134,7 @@ setup:
 
   - do:
       search:
+        rest_total_hits_as_int: true
         index: test
         body: {"aggs": { "gc" : { "geo_point_clustering": {"field": "point", "zoom": 9} } } }
 
@@ -169,6 +155,7 @@ setup:
 
   - do:
       search:
+        rest_total_hits_as_int: true
         index: test
         body: {"aggs": { "gc" : { "geo_point_clustering": {"field": "point", "zoom": 15} } } }
 

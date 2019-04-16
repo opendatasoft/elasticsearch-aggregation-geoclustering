@@ -1,6 +1,7 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.ScoreMode;
 import org.elasticsearch.common.geo.GeoHashUtils;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.lease.Releasables;
@@ -51,8 +52,11 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
     }
 
     @Override
-    public boolean needsScores() {
-        return (valuesSource != null && valuesSource.needsScores()) || super.needsScores();
+    public ScoreMode scoreMode() {
+        if (valuesSource != null && valuesSource.needsScores()) {
+            return ScoreMode.COMPLETE;
+        }
+        return super.scoreMode();
     }
 
     @Override
