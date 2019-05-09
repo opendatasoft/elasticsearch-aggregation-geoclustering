@@ -33,7 +33,7 @@ For example :
             "geo_point_clustering": {
                 "field": "geo_point",
                 "zoom": 1,
-                "distance": 50
+                "radius": 50
             }
         }
     }
