@@ -151,7 +151,7 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
 
     @Override
     public void doClose() {
-        Releasables.close(bucketOrds);
+        Releasables.close(bucketOrds, centroids);
     }
 
 }
