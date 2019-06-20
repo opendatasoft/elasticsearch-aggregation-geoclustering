@@ -82,7 +82,7 @@ To install it, launch this command in Elasticsearch directory replacing the url 
 | 6.5.4 | 6.5.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.5.4.0/geopoint-clustering-aggregation-6.5.4.0.zip|
 | 6.6.2 | 6.6.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.6.2.0/geopoint-clustering-aggregation-6.6.2.0.zip|
 | 6.7.1 | 6.7.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.7.1.0/geopoint-clustering-aggregation-6.7.1.0.zip|
-| 6.8.0 | 6.8.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.8.0.0/geopoint-clustering-aggregation-6.8.0.0.zip|
+| 6.8.0 | 6.8.0.1 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.8.0.1/geopoint-clustering-aggregation-6.8.0.1.zip|
 | 7.0.1 | 7.0.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.0.1.0/geopoint-clustering-aggregation-7.0.1.0.zip|
 | 7.1.0 | 7.1.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.1.0.0/geopoint-clustering-aggregation-7.1.0.0.zip|
  
