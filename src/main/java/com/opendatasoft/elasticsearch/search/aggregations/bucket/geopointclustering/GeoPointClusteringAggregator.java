@@ -2,7 +2,7 @@ package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointcluste
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ScoreMode;
-import org.elasticsearch.common.geo.GeoHashUtils;
+import org.elasticsearch.geo.utils.Geohash;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.util.LongHash;
@@ -73,7 +73,7 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
                     long previous = Long.MAX_VALUE;
                     for (int i = 0; i < valuesCount; ++i) {
                         GeoPoint value = values.nextValue();
-                        final long val = GeoHashUtils.longEncode(value.getLon(), value.getLat(), precision);
+                        final long val = Geohash.longEncode(value.getLon(), value.getLat(), precision);
                         if (previous != val || i == 0) {
                             long bucketOrdinal = bucketOrds.add(val);
                             double[] pt = new double[2];

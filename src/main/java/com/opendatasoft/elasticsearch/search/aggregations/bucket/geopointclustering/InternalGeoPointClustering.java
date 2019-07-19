@@ -2,7 +2,7 @@ package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointcluste
 
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.util.PriorityQueue;
-import org.elasticsearch.common.geo.GeoHashUtils;
+import org.elasticsearch.geo.utils.Geohash;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -71,7 +71,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation
 
         @Override
         public String getKeyAsString() {
-            return GeoHashUtils.stringEncode(geohashAsLong);
+            return Geohash.stringEncode(geohashAsLong);
         }
 
         @Override
@@ -120,7 +120,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation
         public XContentBuilder toXContent(XContentBuilder builder, Params params) throws IOException {
             builder.startObject();
             builder.field("geohash_grids",
-                    geohashesList.stream().map(GeoHashUtils::stringEncode).collect(Collectors.toList()));
+                    geohashesList.stream().map(Geohash::stringEncode).collect(Collectors.toList()));
             builder.field(CommonFields.DOC_COUNT.getPreferredName(), docCount);
             builder.field("centroid", centroid);
             aggregations.toXContentInternal(builder, params);
