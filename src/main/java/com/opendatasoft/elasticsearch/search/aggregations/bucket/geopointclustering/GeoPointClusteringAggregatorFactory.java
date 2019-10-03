@@ -16,8 +16,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public class GeoPointClusteringAggregatorFactory
-        extends ValuesSourceAggregatorFactory<GeoPoint, GeoPointClusteringAggregatorFactory> {
+public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorFactory<GeoPoint> {
 
     private final int precision;
     private final double radius;
@@ -28,7 +27,7 @@ public class GeoPointClusteringAggregatorFactory
     GeoPointClusteringAggregatorFactory(
             String name, ValuesSourceConfig<GeoPoint> config, int precision, double radius, double ratio,
             int requiredSize, int shardSize, SearchContext context,
-            AggregatorFactory<?> parent, AggregatorFactories.Builder subFactoriesBuilder, Map<String, Object> metaData
+            AggregatorFactory parent, AggregatorFactories.Builder subFactoriesBuilder, Map<String, Object> metaData
     ) throws IOException {
         super(name, config, context, parent, subFactoriesBuilder, metaData);
         this.precision = precision;

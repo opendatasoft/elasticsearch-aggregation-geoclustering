@@ -178,8 +178,8 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     @Override
-    protected ValuesSourceAggregatorFactory<ValuesSource.GeoPoint, ?> innerBuild(SearchContext context,
-            ValuesSourceConfig<ValuesSource.GeoPoint> config, AggregatorFactory<?> parent, Builder subFactoriesBuilder)
+    protected ValuesSourceAggregatorFactory<ValuesSource.GeoPoint> innerBuild(SearchContext context,
+            ValuesSourceConfig<ValuesSource.GeoPoint> config, AggregatorFactory parent, Builder subFactoriesBuilder)
                     throws IOException {
         int shardSize = this.shardSize;
 
@@ -234,7 +234,7 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     @Override
-    protected boolean innerEquals(Object obj) {
+    public boolean equals(Object obj) {
         GeoPointClusteringAggregationBuilder other = (GeoPointClusteringAggregationBuilder) obj;
         if (zoom != other.zoom) {
             return false;
@@ -258,7 +258,7 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     @Override
-    protected int innerHashCode() {
+    public int hashCode() {
         return Objects.hash(zoom, extent, radius, ratio, requiredSize, shardSize);
     }
 

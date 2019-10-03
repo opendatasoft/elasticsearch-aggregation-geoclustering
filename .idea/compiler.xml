@@ -2,6 +2,8 @@
 <project version="4">
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
+      <module name="geopoint-clustering-aggregation.main" target="1.8" />
+      <module name="geopoint-clustering-aggregation.test" target="1.8" />
       <module name="geopoint-clustering-aggregation_main" target="1.8" />
       <module name="geopoint-clustering-aggregation_test" target="1.8" />
     </bytecodeTargetLevel>
