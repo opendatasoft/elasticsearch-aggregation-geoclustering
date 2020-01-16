@@ -1,5 +1,6 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
+import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.search.aggregations.Aggregator;
 import org.elasticsearch.search.aggregations.AggregatorFactories;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
@@ -26,7 +27,7 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
 
     GeoPointClusteringAggregatorFactory(
             String name, ValuesSourceConfig<GeoPoint> config, int precision, double radius, double ratio,
-            int requiredSize, int shardSize, SearchContext context,
+            int requiredSize, int shardSize, QueryShardContext context,
             AggregatorFactory parent, AggregatorFactories.Builder subFactoriesBuilder, Map<String, Object> metaData
     ) throws IOException {
         super(name, config, context, parent, subFactoriesBuilder, metaData);
@@ -39,11 +40,12 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
 
     @Override
     protected Aggregator createUnmapped(
+            SearchContext searchContext,
             Aggregator parent, List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData
     ) throws IOException {
         final InternalAggregation aggregation = new InternalGeoPointClustering(name, radius, ratio, requiredSize,
                 Collections.<InternalGeoPointClustering.Bucket> emptyList(), pipelineAggregators, metaData);
-        return new NonCollectingAggregator(name, context, parent, pipelineAggregators, metaData) {
+        return new NonCollectingAggregator(name, searchContext, parent, pipelineAggregators, metaData) {
             @Override
             public InternalAggregation buildEmptyAggregation() {
                 return aggregation;
@@ -53,13 +55,13 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
 
     @Override
     protected Aggregator doCreateInternal(
-            final GeoPoint valuesSource, Aggregator parent, boolean collectsFromSingleBucket,
+            final GeoPoint valuesSource, SearchContext searchContext, Aggregator parent, boolean collectsFromSingleBucket,
             List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData) throws IOException {
         if (collectsFromSingleBucket == false) {
-            return asMultiBucketAggregator(this, context, parent);
+            return asMultiBucketAggregator(this, searchContext, parent);
         }
         return new GeoPointClusteringAggregator(
-                name, factories, valuesSource, precision, radius, ratio, requiredSize, shardSize, context, parent,
+                name, factories, valuesSource, precision, radius, ratio, requiredSize, shardSize, searchContext, parent,
                 pipelineAggregators, metaData);
     }
 
