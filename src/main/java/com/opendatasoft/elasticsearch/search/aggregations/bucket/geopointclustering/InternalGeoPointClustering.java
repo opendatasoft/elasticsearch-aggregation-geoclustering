@@ -200,7 +200,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation
     }
 
     @Override
-    public InternalGeoPointClustering doReduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
+    public InternalGeoPointClustering reduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
         LongObjectPagedHashMap<List<Bucket>> buckets = null;
         for (InternalAggregation aggregation : aggregations) {
             InternalGeoPointClustering grid = (InternalGeoPointClustering) aggregation;

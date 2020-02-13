@@ -1,7 +1,3 @@
-// Fixes integTests for 7.5.1 => https://github.com/elastic/elasticsearch/issues/49787#issuecomment-562720655
-import org.elasticsearch.gradle.testclusters.TestClustersPlugin
-import org.elasticsearch.gradle.testclusters.TestClustersRegistry
-
 buildscript {
     repositories {
         mavenLocal()
@@ -47,9 +43,3 @@ checkstyleTest.enabled = true
 dependencyLicenses.enabled = true
 
 thirdPartyAudit.enabled = true
-
-// Fixes integTests for 7.5.1 => https://github.com/elastic/elasticsearch/issues/49787#issuecomment-562720655
-TestClustersRegistry registry = project.rootProject.extensions.create("testClustersRegistry", TestClustersRegistry)
-TestClustersPlugin.configureClaimClustersHook(project.gradle, registry)
-TestClustersPlugin.configureStartClustersHook(project.gradle, registry)
-TestClustersPlugin.configureStopClustersHook(project.gradle, registry)

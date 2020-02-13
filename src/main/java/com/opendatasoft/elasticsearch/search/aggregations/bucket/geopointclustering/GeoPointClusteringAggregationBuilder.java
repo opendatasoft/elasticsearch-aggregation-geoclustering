@@ -13,13 +13,13 @@ import org.elasticsearch.search.aggregations.AggregatorFactories.Builder;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
 import org.elasticsearch.search.aggregations.bucket.BucketUtils;
 import org.elasticsearch.search.aggregations.bucket.MultiBucketAggregationBuilder;
+import org.elasticsearch.search.aggregations.support.CoreValuesSourceType;
 import org.elasticsearch.search.aggregations.support.ValueType;
 import org.elasticsearch.search.aggregations.support.ValuesSource;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregatorFactory;
 import org.elasticsearch.search.aggregations.support.ValuesSourceConfig;
 import org.elasticsearch.search.aggregations.support.ValuesSourceParserHelper;
-import org.elasticsearch.search.aggregations.support.ValuesSourceType;
 
 import java.io.IOException;
 import java.util.Map;
@@ -60,7 +60,7 @@ public class GeoPointClusteringAggregationBuilder extends
     private double ratio = DEFAULT_RATIO;
 
     public GeoPointClusteringAggregationBuilder(String name) {
-        super(name, ValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
+        super(name, CoreValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
     }
 
     protected GeoPointClusteringAggregationBuilder(
@@ -83,7 +83,7 @@ public class GeoPointClusteringAggregationBuilder extends
      * Read from a stream.
      */
     public GeoPointClusteringAggregationBuilder(StreamInput in) throws IOException {
-        super(in, ValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
+        super(in, CoreValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
         zoom = in.readInt();
         radius = in.readInt();
         extent = in.readInt();
