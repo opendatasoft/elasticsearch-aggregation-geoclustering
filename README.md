@@ -1,9 +1,9 @@
 Elasticsearch Geo Point clustering aggregation plugin
 =====================================================
 
-This aggregations computes a geohash precision from a `zoom` and a `distance` (in pixel).
+This aggregations computes a geohash precision from a `zoom` and a `radius` (in pixel).
 It groups points (from `field` parameter) into buckets that represent geohash cells and computes each bucket's center.
-Then it merges these cells if the distance between two clusters' centers is lower than the `distance` parameter.
+Then it merges these cells if the distance between two clusters' centers is lower than the `radius` parameter.
 
 ```json
 {
@@ -19,9 +19,9 @@ Then it merges these cells if the distance between two clusters' centers is lowe
 ```
 Input parameters :
  - `field`: must be of type geo_point.
- - `zoom`: mandatory integer parameter between 0 and 20. It represents the zoom level used in the request to aggregate geo points.
- - `radius`: radius in pixel. It is used to compute a geohash precision then to merge cluters based on this distance. Default to `50`. 
- - `ratio`: ratio used to make a second merging pass. If the value is `0`, no second pass is made. Default to `2`. 
+ - `zoom`: mandatory integer parameter between 1 and 25. It represents the zoom level used in the request to aggregate geo points.
+ - `radius`: radius in pixel. It is used to compute a geohash precision then to merge cluters based on this distance. Default to `40`. 
+ - `ratio`: ratio used to make a second merging pass. If the value is `0`, no second pass is made. Default to `0`. 
  - `extent`: Extent of the tiles. Default to `256`
 
 For example :
@@ -33,7 +33,7 @@ For example :
             "geo_point_clustering": {
                 "field": "geo_point",
                 "zoom": 1,
-                "radius": 50
+                "radius": 40
             }
         }
     }
