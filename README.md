@@ -7,6 +7,7 @@ For example, at zoom level 1 with points across France, `geohash_grid` agg will 
 This is done during the reduce phase.  
 
 Contrary to `geohash_grid` aggregation, buckets keys are a tuple(centroid, geohash cells) instead of geohash cells only, because one cluster can be linked to several geohash cells, due to the cluster merge process during the reduce phase.
+Centroids are built during the shard collect phase.
 
 Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/geo-shape.html) is not supported.
 
@@ -38,6 +39,7 @@ Available releases:
 | 7.5.1 | 7.5.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.5.1.0/geopoint-clustering-aggregation-7.5.1.0.zip|
 | 7.6.0 | 7.6.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.6.0.0/geopoint-clustering-aggregation-7.6.0.0.zip|
 | 7.7.0 | 7.7.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.7.0.0/geopoint-clustering-aggregation-7.7.0.0.zip|
+| 7.10.2 | 7.10.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.10.2.0/geopoint-clustering-aggregation-7.10.2.0.zip|
 
 
 
