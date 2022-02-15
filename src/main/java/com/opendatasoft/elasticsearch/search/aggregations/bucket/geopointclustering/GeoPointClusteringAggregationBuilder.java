@@ -4,20 +4,20 @@ import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
-import org.elasticsearch.common.xcontent.ObjectParser;
-import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.elasticsearch.common.xcontent.XContentParser;
-import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregatorFactories.Builder;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
 import org.elasticsearch.search.aggregations.bucket.BucketUtils;
+import org.elasticsearch.search.aggregations.support.AggregationContext;
 import org.elasticsearch.search.aggregations.support.CoreValuesSourceType;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregatorFactory;
 import org.elasticsearch.search.aggregations.support.ValuesSourceConfig;
 import org.elasticsearch.search.aggregations.support.ValuesSourceRegistry;
 import org.elasticsearch.search.aggregations.support.ValuesSourceType;
+import org.elasticsearch.xcontent.ObjectParser;
+import org.elasticsearch.xcontent.XContentBuilder;
+import org.elasticsearch.xcontent.XContentParser;
 
 import java.io.IOException;
 import java.util.Map;
@@ -29,11 +29,11 @@ public class GeoPointClusteringAggregationBuilder extends
     public static final ValuesSourceRegistry.RegistryKey<GeoPointClusteringAggregatorSupplier> REGISTRY_KEY =
             new ValuesSourceRegistry.RegistryKey<>(NAME, GeoPointClusteringAggregatorSupplier.class);
 
-    public static final int DEFAULT_ZOOM = 1;
-    public static final int DEFAULT_EXTENT = 256;
-    public static final int DEFAULT_MAX_NUM_CELLS = 10000;
-    public static final int DEFAULT_RADIUS = 40;
-    public static final double DEFAULT_RATIO = 0;
+    static final int DEFAULT_ZOOM = 1;
+    static final int DEFAULT_EXTENT = 256;
+    static final int DEFAULT_MAX_NUM_CELLS = 10000;
+    static final int DEFAULT_RADIUS = 40;
+    static final double DEFAULT_RATIO = 0;
 
     private static final ObjectParser<GeoPointClusteringAggregationBuilder, Void> PARSER;
     static {
@@ -184,7 +184,7 @@ public class GeoPointClusteringAggregationBuilder extends
 
     @Override
     protected ValuesSourceAggregatorFactory innerBuild(
-            QueryShardContext context,
+            AggregationContext context,
             ValuesSourceConfig config,
             AggregatorFactory parent,
             Builder subFactoriesBuilder
@@ -279,7 +279,8 @@ public class GeoPointClusteringAggregationBuilder extends
         builder.register(
                 GeoPointClusteringAggregationBuilder.REGISTRY_KEY,
                 CoreValuesSourceType.GEOPOINT,
-                GeoPointClusteringAggregator::new,
+                (name, factories, valuesSource, precision, radius, ratio, requiredSize,
+                 shardSize, context, parent, cardinality, metaData) -> null,
                 true);
     }
 

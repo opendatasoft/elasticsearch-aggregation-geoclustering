@@ -1,6 +1,6 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
-import org.elasticsearch.common.ParseField;
+import org.elasticsearch.xcontent.ParseField;
 
 /**
  * Encapsulates relevant parameter defaults and validations for the geo point clustering aggregation.
