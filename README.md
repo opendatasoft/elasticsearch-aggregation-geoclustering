@@ -16,7 +16,7 @@ Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticse
 ### Install
 
 Install plugin with:
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.0.0/geopoint-clustering-aggregation-7.17.0.0.zip`
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.16.3.0/geopoint-clustering-aggregation-7.16.3.0.zip`
 
 The first 3 digits of plugin version is Elasticsearch versioning. The last digit is used for plugin versioning under an elasticsearch version.
 
@@ -40,6 +40,7 @@ Available releases:
 | 7.6.0 | 7.6.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.6.0.0/geopoint-clustering-aggregation-7.6.0.0.zip|
 | 7.7.0 | 7.7.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.7.0.0/geopoint-clustering-aggregation-7.7.0.0.zip|
 | 7.10.2 | 7.10.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.10.2.0/geopoint-clustering-aggregation-7.10.2.0.zip|
+| 7.16.3 | 7.16.3.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.16.3.0/geopoint-clustering-aggregation-7.16.3.0.zip|
 | 7.17.0 | 7.17.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.0.0/geopoint-clustering-aggregation-7.17.0.0.zip|
 
 
