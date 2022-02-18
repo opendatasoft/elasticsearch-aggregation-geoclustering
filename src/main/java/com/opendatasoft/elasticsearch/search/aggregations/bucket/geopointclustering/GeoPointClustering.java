@@ -5,8 +5,7 @@ import org.elasticsearch.search.aggregations.bucket.MultiBucketsAggregation;
 import java.util.List;
 
 /**
- * A {@code geopoint_clustering} aggregation.
- * precision.
+ * A {@code geopoint_clustering} aggregation. Buckets key are centroids.
  */
 public interface GeoPointClustering extends MultiBucketsAggregation {
 

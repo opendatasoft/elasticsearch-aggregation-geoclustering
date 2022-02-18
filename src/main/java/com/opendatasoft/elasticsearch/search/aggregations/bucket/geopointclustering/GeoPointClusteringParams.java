@@ -16,9 +16,9 @@ final class GeoPointClusteringParams {
     static final ParseField FIELD_RATIO = new ParseField("ratio");
 
     static int checkZoom(int zoom) {
-        if ((zoom < 1) || (zoom > 25)) {
+        if ((zoom < 0) || (zoom > 25)) {
             throw new IllegalArgumentException("Invalid geohash aggregation zoom of " + zoom
-                    + ". Must be between 1 and 25.");
+                    + ". Must be between 0 and 25.");
         }
         return zoom;
     }

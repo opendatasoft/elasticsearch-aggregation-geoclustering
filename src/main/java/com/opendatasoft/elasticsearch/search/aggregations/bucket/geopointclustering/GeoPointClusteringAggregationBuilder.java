@@ -12,33 +12,33 @@ import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregatorFactories.Builder;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
 import org.elasticsearch.search.aggregations.bucket.BucketUtils;
-import org.elasticsearch.search.aggregations.bucket.MultiBucketAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.CoreValuesSourceType;
-import org.elasticsearch.search.aggregations.support.ValueType;
-import org.elasticsearch.search.aggregations.support.ValuesSource;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregatorFactory;
 import org.elasticsearch.search.aggregations.support.ValuesSourceConfig;
-import org.elasticsearch.search.aggregations.support.ValuesSourceParserHelper;
+import org.elasticsearch.search.aggregations.support.ValuesSourceRegistry;
+import org.elasticsearch.search.aggregations.support.ValuesSourceType;
 
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
 public class GeoPointClusteringAggregationBuilder extends
-        ValuesSourceAggregationBuilder<ValuesSource.GeoPoint, GeoPointClusteringAggregationBuilder>
-        implements MultiBucketAggregationBuilder {
+        ValuesSourceAggregationBuilder<GeoPointClusteringAggregationBuilder> {
     public static final String NAME = "geo_point_clustering";
+    public static final ValuesSourceRegistry.RegistryKey<GeoPointClusteringAggregatorSupplier> REGISTRY_KEY =
+            new ValuesSourceRegistry.RegistryKey<>(NAME, GeoPointClusteringAggregatorSupplier.class);
+
     public static final int DEFAULT_ZOOM = 1;
-    public static final int DEFAULT_RADIUS = 40;
     public static final int DEFAULT_EXTENT = 256;
     public static final int DEFAULT_MAX_NUM_CELLS = 10000;
+    public static final int DEFAULT_RADIUS = 40;
     public static final double DEFAULT_RATIO = 0;
 
     private static final ObjectParser<GeoPointClusteringAggregationBuilder, Void> PARSER;
     static {
         PARSER = new ObjectParser<>(GeoPointClusteringAggregationBuilder.NAME);
-        ValuesSourceParserHelper.declareGeoFields(PARSER, false, false);
+        ValuesSourceAggregationBuilder.declareFields(PARSER, false, false, false);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::size, GeoPointClusteringParams.FIELD_SIZE);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::shardSize, GeoPointClusteringParams.FIELD_SHARD_SIZE);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::zoom, GeoPointClusteringParams.FIELD_ZOOM);
@@ -60,7 +60,7 @@ public class GeoPointClusteringAggregationBuilder extends
     private double ratio = DEFAULT_RATIO;
 
     public GeoPointClusteringAggregationBuilder(String name) {
-        super(name, CoreValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
+        super(name);
     }
 
     protected GeoPointClusteringAggregationBuilder(
@@ -83,7 +83,7 @@ public class GeoPointClusteringAggregationBuilder extends
      * Read from a stream.
      */
     public GeoPointClusteringAggregationBuilder(StreamInput in) throws IOException {
-        super(in, CoreValuesSourceType.GEOPOINT, ValueType.GEOPOINT);
+        super(in);
         zoom = in.readInt();
         radius = in.readInt();
         extent = in.readInt();
@@ -92,6 +92,9 @@ public class GeoPointClusteringAggregationBuilder extends
         shardSize = in.readVInt();
     }
 
+    /**
+     * Write to stream.
+     */
     @Override
     protected void innerWriteTo(StreamOutput out) throws IOException {
         out.writeInt(zoom);
@@ -105,6 +108,16 @@ public class GeoPointClusteringAggregationBuilder extends
     public GeoPointClusteringAggregationBuilder zoom(int zoom) {
         this.zoom = GeoPointClusteringParams.checkZoom(zoom);
         return this;
+    }
+
+    @Override
+    public BucketCardinality bucketCardinality() {
+        return BucketCardinality.MANY;
+    }
+
+    @Override
+    protected ValuesSourceType defaultValueSourceType() {
+        return CoreValuesSourceType.GEOPOINT;
     }
 
     public int zoom() {
@@ -133,11 +146,6 @@ public class GeoPointClusteringAggregationBuilder extends
         return this;
     }
 
-    public int radius() {
-        return radius;
-    }
-
-
     public GeoPointClusteringAggregationBuilder ratio(double ratio) {
         if (ratio > 2) {
             throw new IllegalArgumentException(
@@ -147,8 +155,9 @@ public class GeoPointClusteringAggregationBuilder extends
         return this;
     }
 
-    public double ratio() {
-        return ratio;
+    @Override
+    protected ValuesSourceRegistry.RegistryKey<?> getRegistryKey() {
+        return REGISTRY_KEY;
     }
 
     public GeoPointClusteringAggregationBuilder size(int size) {
@@ -173,15 +182,13 @@ public class GeoPointClusteringAggregationBuilder extends
         return this;
         }
 
-    public int shardSize() {
-        return shardSize;
-    }
-
     @Override
-    protected ValuesSourceAggregatorFactory<ValuesSource.GeoPoint> innerBuild(
+    protected ValuesSourceAggregatorFactory innerBuild(
             QueryShardContext context,
-            ValuesSourceConfig<ValuesSource.GeoPoint> config, AggregatorFactory parent, Builder subFactoriesBuilder)
-                    throws IOException {
+            ValuesSourceConfig config,
+            AggregatorFactory parent,
+            Builder subFactoriesBuilder
+    ) throws IOException {
         int shardSize = this.shardSize;
 
         int requiredSize = this.requiredSize;
@@ -218,7 +225,7 @@ public class GeoPointClusteringAggregationBuilder extends
         int precision = GeoUtils.geoHashLevelsForPrecision(radius);
 
         return new GeoPointClusteringAggregatorFactory(name, config, precision, radius, ratio, requiredSize, shardSize,
-                context, parent, subFactoriesBuilder, metaData);
+                context, parent, subFactoriesBuilder, metadata);
     }
 
     @Override
@@ -267,4 +274,13 @@ public class GeoPointClusteringAggregationBuilder extends
     public String getType() {
         return NAME;
     }
+
+    public static void registerAggregators(ValuesSourceRegistry.Builder builder) {
+        builder.register(
+                GeoPointClusteringAggregationBuilder.REGISTRY_KEY,
+                CoreValuesSourceType.GEOPOINT,
+                GeoPointClusteringAggregator::new,
+                true);
+    }
+
 }

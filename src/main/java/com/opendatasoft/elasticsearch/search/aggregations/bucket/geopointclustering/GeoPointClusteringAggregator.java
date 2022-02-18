@@ -4,23 +4,23 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.lease.Releasables;
-import org.elasticsearch.common.util.LongHash;
 import org.elasticsearch.common.util.ObjectArray;
 import org.elasticsearch.geometry.utils.Geohash;
 import org.elasticsearch.index.fielddata.MultiGeoPointValues;
 import org.elasticsearch.search.aggregations.Aggregator;
 import org.elasticsearch.search.aggregations.AggregatorFactories;
+import org.elasticsearch.search.aggregations.CardinalityUpperBound;
+import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.LeafBucketCollector;
 import org.elasticsearch.search.aggregations.LeafBucketCollectorBase;
 import org.elasticsearch.search.aggregations.bucket.BucketsAggregator;
-import org.elasticsearch.search.aggregations.pipeline.PipelineAggregator;
+import org.elasticsearch.search.aggregations.bucket.terms.LongKeyedBucketOrds;
 import org.elasticsearch.search.aggregations.support.ValuesSource;
 import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 
@@ -31,23 +31,32 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
     private final int precision;
     private final double radius;
     private final double ratio;
-    private final LongHash bucketOrds;
+    private final LongKeyedBucketOrds bucketOrds;
     private ObjectArray<GeoPoint> centroids;
     private final ValuesSource.GeoPoint valuesSource;
 
-    GeoPointClusteringAggregator(
-            String name, AggregatorFactories factories, ValuesSource.GeoPoint valuesSource, int precision,
-            double radius, double ratio, int requiredSize, int shardSize, SearchContext aggregationContext,
-            Aggregator parent, List<PipelineAggregator> pipelineAggregators, Map<String, Object> metaData
+    public GeoPointClusteringAggregator(
+            String name,
+            AggregatorFactories factories,
+            ValuesSource.GeoPoint valuesSource,
+            int precision,
+            double radius,
+            double ratio,
+            int requiredSize,
+            int shardSize,
+            SearchContext aggregationContext,
+            Aggregator parent,
+            CardinalityUpperBound cardinality,
+            Map<String, Object> metaData
     ) throws IOException {
-        super(name, factories, aggregationContext, parent, pipelineAggregators, metaData);
+        super(name, factories, aggregationContext, parent, cardinality, metaData);
         this.valuesSource = valuesSource;
         this.precision = precision;
         this.radius = radius;
         this.ratio = ratio;
         this.requiredSize = requiredSize;
         this.shardSize = shardSize;
-        bucketOrds = new LongHash(1, aggregationContext.bigArrays());
+        bucketOrds = LongKeyedBucketOrds.build(aggregationContext.bigArrays(), cardinality);
         centroids = context.bigArrays().newObjectArray(1);
     }
 
@@ -59,37 +68,43 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
         return super.scoreMode();
     }
 
+    /**
+     * getLeafCollector() is called for each shard.
+     * collect() is called for each document: it accumulates doc values
+     */
     @Override
     public LeafBucketCollector getLeafCollector(LeafReaderContext ctx,
-            final LeafBucketCollector sub) throws IOException {
-        final MultiGeoPointValues values = valuesSource.geoPointValues(ctx);
-        return new LeafBucketCollectorBase(sub, null) {
+                                                final LeafBucketCollector sub) throws IOException {
+        final MultiGeoPointValues values = valuesSource.geoPointValues(ctx);  // GeoPoint field_data
+        return new LeafBucketCollectorBase(sub, values) {
+            /**
+             * Collect the given {@code doc} in the bucket owned by {@code owningBucketOrdinal}.
+             * We don't know how many buckets will fall into any particular owning bucket, that's why
+             * we are using {@link LongKeyedBucketOrds} which amounts to a hash lookup.
+             */
             @Override
-            public void collect(int doc, long bucket) throws IOException {
-                assert bucket == 0;
-                if (values.advanceExact(doc)) {
+            public void collect(int doc, long owningBucketOrdinal) throws IOException {
+                assert owningBucketOrdinal == 0;
+                if (values.advanceExact(doc)) {  // iterate over documents; values contain current document field_data
                     final int valuesCount = values.docValueCount();
 
                     long previous = Long.MAX_VALUE;
-                    for (int i = 0; i < valuesCount; ++i) {
+                    for (int i = 0; i < valuesCount; ++i) {  // iterate over field_data for the current doc
                         GeoPoint value = values.nextValue();
-                        final long val = Geohash.longEncode(value.getLon(), value.getLat(), precision);
-                        if (previous != val || i == 0) {
-                            long bucketOrdinal = bucketOrds.add(val);
-                            double[] pt = new double[2];
+                        final long geohash_bucket_key = Geohash.longEncode(value.getLon(), value.getLat(), precision);
+                        if (previous != geohash_bucket_key || i == 0) {  // already seen, from the previous doc
+                            long bucketOrdinal = bucketOrds.add(owningBucketOrdinal, geohash_bucket_key);
                             double centroidLat = 0.0;
                             double centroidLon = 0.0;
-                            if (bucketOrdinal < 0) { // already seen
+                            if (bucketOrdinal < 0) {  // already seen, from the HashTable
                                 bucketOrdinal = -1 - bucketOrdinal;
                                 collectExistingBucket(sub, doc, bucketOrdinal);
                                 GeoPoint centroid = centroids.get(bucketOrdinal);
                                 centroidLat = centroid.lat();
                                 centroidLon = centroid.lon();
-//                                final long mortonCode = centroids.get(bucketOrdinal);
-//                                pt[0] = InternalGeoPointClustering.decodeLongitude(mortonCode);
-//                                pt[1] = InternalGeoPointClustering.decodeLatitude(mortonCode);
                             } else {
                                 centroids = context.bigArrays().grow(centroids, bucketOrdinal + 1);
+                                // collect the given doc in the given bucket (identified by the bucket ordinal)
                                 collectBucket(sub, doc, bucketOrdinal);
                             }
 
@@ -97,61 +112,70 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
                             centroidLat = centroidLat + (value.getLat() - centroidLat) / bucketDocCount(bucketOrdinal);
 
                             centroids.set(bucketOrdinal, new GeoPoint(centroidLat, centroidLon));
-                            previous = val;
+                            previous = geohash_bucket_key;
                         }
                     }
                 }
             }
+
         };
     }
 
-    // private impl that stores a bucket ord. This allows for computing the aggregations lazily.
-    static class OrdinalBucket extends InternalGeoPointClustering.Bucket {
-
-        long bucketOrd;
-
-        OrdinalBucket() {
-            super(0, null, 0, null);
-        }
-
+    InternalGeoPointClustering.Bucket newEmptyBucket() {
+        return new InternalGeoPointClustering.Bucket(0, null, 0, null);
     }
 
+    /**
+     * buildAggregations is called for each shard after the collect phase, and will create an
+     * InternalGeoPointClustering aggregation then sent to the master node for the reduce phase.
+     * The resulting buckets are ordered.
+     */
     @Override
-    public InternalGeoPointClustering buildAggregation(long owningBucketOrdinal) throws IOException {
-        assert owningBucketOrdinal == 0;
-        final int size = (int) Math.min(bucketOrds.size(), shardSize);
+    public InternalAggregation[] buildAggregations(long[] owningBucketOrdinals) throws IOException {
+        InternalGeoPointClustering.Bucket[][] topBucketsPerOrd = new InternalGeoPointClustering.Bucket[owningBucketOrdinals.length][];
+        InternalGeoPointClustering[] results = new InternalGeoPointClustering[owningBucketOrdinals.length];
 
-        InternalGeoPointClustering.BucketPriorityQueue ordered =
-                new InternalGeoPointClustering.BucketPriorityQueue(size);
-        OrdinalBucket spare = null;
-        for (long i = 0; i < bucketOrds.size(); i++) {
-            if (spare == null) {
-                spare = new OrdinalBucket();
+        for (int ordIdx = 0; ordIdx < owningBucketOrdinals.length; ordIdx++) {
+            final int size = (int) Math.min(bucketOrds.size(), shardSize);
+
+            // store buckets in a Lucene PriorityQueue
+            InternalGeoPointClustering.BucketPriorityQueue ordered =  new InternalGeoPointClustering.BucketPriorityQueue(size);
+            InternalGeoPointClustering.Bucket spare = null;
+            LongKeyedBucketOrds.BucketOrdsEnum ordsEnum = bucketOrds.ordsEnum(owningBucketOrdinals[ordIdx]);
+            while (ordsEnum.next()) {
+                if (spare == null) {
+                    spare = newEmptyBucket();
+                }
+
+                spare.geohashAsLong = ordsEnum.value();
+                spare.centroid = centroids.get(ordsEnum.ord());
+                spare.docCount = bucketDocCount(ordsEnum.ord());
+                spare.bucketOrd = ordsEnum.ord();
+                spare = ordered.insertWithOverflow(spare);
             }
 
-            spare.geohashAsLong = bucketOrds.get(i);
-            spare.docCount = bucketDocCount(i);
-            spare.bucketOrd = i;
-            spare = (OrdinalBucket) ordered.insertWithOverflow(spare);
+            // feed the final aggregation from the PriorityQueue
+            topBucketsPerOrd[ordIdx] = new InternalGeoPointClustering.Bucket[ordered.size()];
+            for (int i = ordered.size() - 1; i >= 0; --i) {
+                topBucketsPerOrd[ordIdx][i] = ordered.pop();
+            }
+            results[ordIdx] = new InternalGeoPointClustering(
+                name, radius, ratio, requiredSize, Arrays.asList(topBucketsPerOrd[ordIdx]), metadata());
         }
 
-        final InternalGeoPointClustering.Bucket[] list = new InternalGeoPointClustering.Bucket[ordered.size()];
-        for (int i = ordered.size() - 1; i >= 0; --i) {
-            final OrdinalBucket bucket = (OrdinalBucket) ordered.pop();
-            bucket.centroid = centroids.get(bucket.bucketOrd);
-            bucket.aggregations = bucketAggregations(bucket.bucketOrd);
-            list[i] = bucket;
-        }
-        return new InternalGeoPointClustering(
-                name, radius, ratio, requiredSize, Arrays.asList(list), pipelineAggregators(), metaData());
+        buildSubAggsForAllBuckets(
+                topBucketsPerOrd,
+                b -> b.bucketOrd,
+                (b, aggregations) -> b.subAggregations = aggregations
+        );
+        return results;
     }
 
     @Override
     public InternalGeoPointClustering buildEmptyAggregation() {
         return new InternalGeoPointClustering(
-                name, radius, ratio, requiredSize, Collections.emptyList(), pipelineAggregators(), metaData());
+                name, radius, ratio, requiredSize, Collections.emptyList(), metadata());
     }
-
 
     @Override
     public void doClose() {

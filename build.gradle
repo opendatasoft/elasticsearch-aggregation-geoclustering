@@ -16,10 +16,31 @@ version = "${plugin_version}"
 apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'elasticsearch.esplugin'
+apply plugin: 'elasticsearch.yaml-rest-test'
 
 // license of this project
 licenseFile = rootProject.file('LICENSE')
 noticeFile = rootProject.file('README.md')
+
+publishing {
+    publications {
+        // add license information to generated poms
+        all {
+            pom.withXml { XmlProvider xml ->
+                Node node = xml.asNode()
+
+                Node license = node.appendNode('licenses').appendNode('license')
+                license.appendNode('name', 'The MIT License (MIT)')
+                license.appendNode('url', './LICENSE')
+                license.appendNode('distribution', 'repo')
+
+                Node developer = node.appendNode('developers').appendNode('developer')
+                developer.appendNode('name', 'Opendatasoft')
+                developer.appendNode('url', 'https://www.opendatasoft.com/')
+            }
+        }
+    }
+}
 
 esplugin {
     name 'geopoint-clustering-aggregation'
@@ -31,8 +52,11 @@ esplugin {
 
 dependencies {
     compile "org.elasticsearch:elasticsearch:${es_version}"
-    testCompile "org.elasticsearch.test:framework:${es_version}"
+    // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
+    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:${versions.log4j}"
 }
+
+test.enabled = false
 
 // Skip license headers check
 licenseHeaders.enabled = false
@@ -43,3 +67,13 @@ checkstyleTest.enabled = true
 dependencyLicenses.enabled = true
 
 thirdPartyAudit.enabled = true
+
+// fixes "Could not find org.elasticsearch.test:logger-usage:7.10.2"
+//  see https://github.com/elastic/elasticsearch/issues/65247
+loggerUsageCheck.enabled = false
+
+// Make sure the ES distribution used for rest tests is the open source variant
+// Otherwise weirds errors occur (like the geo_shape type is not handled) due to licensing issues
+testClusters.all {
+    testDistribution = 'oss'
+}
