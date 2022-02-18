@@ -174,8 +174,8 @@ Result:
 ## Development environment setup
 ### Build
 
-Requires Java 14 or 15.
-Requires Gradle 6.6.1 (but you should use the packaged gradlew included in this repo anyway).
+Requires Java 15, 16 or 17.
+Requires Gradle 7.4 (but you should use the packaged gradlew included in this repo).
 
 ### Development Environment Setup
 

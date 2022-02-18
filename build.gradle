@@ -17,6 +17,7 @@ repositories {
 }
 
 group = 'org.elasticsearch.plugin'
+version = "${plugin_version}"
 
 apply plugin: 'java'
 apply plugin: 'idea'
