@@ -1,12 +1,18 @@
 buildscript {
     repositories {
-        mavenLocal()
         mavenCentral()
-        jcenter()
     }
 
     dependencies {
         classpath "org.elasticsearch.gradle:build-tools:${es_version}"
+    }
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+    maven {
+        url "https://repo1.maven.org/maven2"
     }
 }
 
@@ -18,30 +24,6 @@ apply plugin: 'idea'
 apply plugin: 'elasticsearch.esplugin'
 apply plugin: 'elasticsearch.yaml-rest-test'
 
-// license of this project
-licenseFile = rootProject.file('LICENSE')
-noticeFile = rootProject.file('README.md')
-
-publishing {
-    publications {
-        // add license information to generated poms
-        all {
-            pom.withXml { XmlProvider xml ->
-                Node node = xml.asNode()
-
-                Node license = node.appendNode('licenses').appendNode('license')
-                license.appendNode('name', 'The MIT License (MIT)')
-                license.appendNode('url', './LICENSE')
-                license.appendNode('distribution', 'repo')
-
-                Node developer = node.appendNode('developers').appendNode('developer')
-                developer.appendNode('name', 'Opendatasoft')
-                developer.appendNode('url', 'https://www.opendatasoft.com/')
-            }
-        }
-    }
-}
-
 esplugin {
     name 'geopoint-clustering-aggregation'
     description 'Aggregate clusters from geohash grid aggregation'
@@ -50,30 +32,25 @@ esplugin {
     noticeFile = rootProject.file('README.md')
 }
 
-dependencies {
-    compile "org.elasticsearch:elasticsearch:${es_version}"
-    // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
-    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:${versions.log4j}"
+// exclude junit from implementation to resolve a version conflict (but not from tests)
+configurations {
+    implementation {
+        exclude(group: 'junit', module: 'junit')
+    }
 }
 
-test.enabled = false
+dependencies {
+    implementation "org.elasticsearch:elasticsearch:${es_version}"
 
-// Skip license headers check
-licenseHeaders.enabled = false
+    yamlRestTestImplementation "org.elasticsearch.test:framework:${es_version}"
+    // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
+    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.1"
+}
 
-// Use elasticsearch checkstyle rules
-checkstyleTest.enabled = true
-
-dependencyLicenses.enabled = true
-
-thirdPartyAudit.enabled = true
-
-// fixes "Could not find org.elasticsearch.test:logger-usage:7.10.2"
-//  see https://github.com/elastic/elasticsearch/issues/65247
-loggerUsageCheck.enabled = false
-
-// Make sure the ES distribution used for rest tests is the open source variant
-// Otherwise weirds errors occur (like the geo_shape type is not handled) due to licensing issues
-testClusters.all {
-    testDistribution = 'oss'
+// Make sure the ES distribution used for rest tests is the "complete" variant
+// Otherwise weirds errors occur (like the geo_shape type is not handled)
+testClusters.configureEach {
+    testDistribution = 'DEFAULT'
+    // disable security to disable failing warnings
+    setting 'xpack.security.enabled', 'false'
 }

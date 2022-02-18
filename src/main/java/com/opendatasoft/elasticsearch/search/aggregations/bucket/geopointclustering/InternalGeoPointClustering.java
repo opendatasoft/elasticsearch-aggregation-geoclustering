@@ -7,13 +7,12 @@ import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.common.util.LongObjectPagedHashMap;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.geometry.utils.Geohash;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.InternalAggregations;
 import org.elasticsearch.search.aggregations.InternalMultiBucketAggregation;
-import org.locationtech.spatial4j.distance.DistanceUtils;
+import org.elasticsearch.xcontent.XContentBuilder;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -307,7 +306,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation
 
         double avgLat = (bucket.centroid.lat() + potentialNeighbor.centroid.lat()) / 2;
 
-        double fixedRadius = radius * Math.cos(DistanceUtils.toRadians(avgLat));
+        double fixedRadius = radius * Math.cos(Math.toRadians(avgLat));
 
         if (neighborDistance <= fixedRadius) {
             potentialNeighbor.visited = true;

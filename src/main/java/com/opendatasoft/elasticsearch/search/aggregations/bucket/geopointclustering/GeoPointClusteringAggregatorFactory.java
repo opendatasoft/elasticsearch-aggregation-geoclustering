@@ -1,16 +1,15 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
-import org.elasticsearch.index.query.QueryShardContext;
 import org.elasticsearch.search.aggregations.Aggregator;
 import org.elasticsearch.search.aggregations.AggregatorFactories;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
 import org.elasticsearch.search.aggregations.CardinalityUpperBound;
 import org.elasticsearch.search.aggregations.InternalAggregation;
 import org.elasticsearch.search.aggregations.NonCollectingAggregator;
+import org.elasticsearch.search.aggregations.support.AggregationContext;
 import org.elasticsearch.search.aggregations.support.ValuesSource;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregatorFactory;
 import org.elasticsearch.search.aggregations.support.ValuesSourceConfig;
-import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -35,7 +34,7 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
             double ratio,
             int requiredSize,
             int shardSize,
-            QueryShardContext context,
+            AggregationContext context,
             AggregatorFactory parent,
             AggregatorFactories.Builder subFactoriesBuilder,
             Map<String, Object> metaData
@@ -54,14 +53,13 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
      */
     @Override
     protected Aggregator createUnmapped(
-            SearchContext searchContext,
             Aggregator parent,
             Map<String,
             Object> metaData
     ) throws IOException {
         final InternalAggregation aggregation = new InternalGeoPointClustering(name, radius, ratio, requiredSize,
                 Collections.<InternalGeoPointClustering.Bucket> emptyList(),  metaData);
-        return new NonCollectingAggregator(name, searchContext, parent, factories, metaData) {
+        return new NonCollectingAggregator(name, context, parent, factories, metaData) {
             @Override
             public InternalAggregation buildEmptyAggregation() {
                 return aggregation;
@@ -71,7 +69,6 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
 
     @Override
     protected Aggregator doCreateInternal(
-            SearchContext searchContext,
             Aggregator parent,
             CardinalityUpperBound cardinality,
             Map<String, Object> metaData
@@ -85,7 +82,7 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
                 ratio,
                 requiredSize,
                 shardSize,
-                searchContext,
+                context,
                 parent,
                 cardinality,
                 metaData);

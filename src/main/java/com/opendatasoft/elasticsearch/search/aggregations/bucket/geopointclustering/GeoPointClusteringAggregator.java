@@ -3,8 +3,8 @@ package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointcluste
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
-import org.elasticsearch.common.lease.Releasables;
 import org.elasticsearch.common.util.ObjectArray;
+import org.elasticsearch.core.Releasables;
 import org.elasticsearch.geometry.utils.Geohash;
 import org.elasticsearch.index.fielddata.MultiGeoPointValues;
 import org.elasticsearch.search.aggregations.Aggregator;
@@ -15,8 +15,8 @@ import org.elasticsearch.search.aggregations.LeafBucketCollector;
 import org.elasticsearch.search.aggregations.LeafBucketCollectorBase;
 import org.elasticsearch.search.aggregations.bucket.BucketsAggregator;
 import org.elasticsearch.search.aggregations.bucket.terms.LongKeyedBucketOrds;
+import org.elasticsearch.search.aggregations.support.AggregationContext;
 import org.elasticsearch.search.aggregations.support.ValuesSource;
-import org.elasticsearch.search.internal.SearchContext;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -44,7 +44,7 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
             double ratio,
             int requiredSize,
             int shardSize,
-            SearchContext aggregationContext,
+            AggregationContext aggregationContext,
             Aggregator parent,
             CardinalityUpperBound cardinality,
             Map<String, Object> metaData
@@ -56,8 +56,8 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
         this.ratio = ratio;
         this.requiredSize = requiredSize;
         this.shardSize = shardSize;
-        bucketOrds = LongKeyedBucketOrds.build(aggregationContext.bigArrays(), cardinality);
-        centroids = context.bigArrays().newObjectArray(1);
+        bucketOrds = LongKeyedBucketOrds.build(bigArrays(), cardinality);
+        centroids = bigArrays().newObjectArray(1);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
                                 centroidLat = centroid.lat();
                                 centroidLon = centroid.lon();
                             } else {
-                                centroids = context.bigArrays().grow(centroids, bucketOrdinal + 1);
+                                centroids = bigArrays().grow(centroids, bucketOrdinal + 1);
                                 // collect the given doc in the given bucket (identified by the bucket ordinal)
                                 collectBucket(sub, doc, bucketOrdinal);
                             }
