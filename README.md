@@ -16,33 +16,7 @@ Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticse
 ### Install
 
 Install plugin with:
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.1.0/geopoint-clustering-aggregation-7.17.1.0.zip`
-
-The first 3 digits of plugin version is Elasticsearch versioning. The last digit is used for plugin versioning under an elasticsearch version.
-
-Available releases:
-| elasticsearch version | plugin version | plugin url |
-| --------------------- | -------------- | ---------- |
-| 6.0.1 | 6.0.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.0.1.0/geopoint-clustering-aggregation-6.0.1.0.zip|
-| 6.1.4 | 6.1.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.1.4.0/geopoint-clustering-aggregation-6.1.4.0.zip|
-| 6.2.4 | 6.2.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.2.4.0/geopoint-clustering-aggregation-6.2.4.0.zip|
-| 6.3.2 | 6.3.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.3.2.0/geopoint-clustering-aggregation-6.3.2.0.zip|
-| 6.4.3 | 6.4.3.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.4.3.0/geopoint-clustering-aggregation-6.4.3.0.zip|
-| 6.5.4 | 6.5.4.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.5.4.0/geopoint-clustering-aggregation-6.5.4.0.zip|
-| 6.6.2 | 6.6.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.6.2.0/geopoint-clustering-aggregation-6.6.2.0.zip|
-| 6.7.1 | 6.7.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.7.1.0/geopoint-clustering-aggregation-6.7.1.0.zip|
-| 6.8.2 | 6.8.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v6.8.2.0/geopoint-clustering-aggregation-6.8.2.0.zip|
-| 7.0.1 | 7.0.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.0.1.0/geopoint-clustering-aggregation-7.0.1.0.zip|
-| 7.1.1 | 7.1.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.1.1.0/geopoint-clustering-aggregation-7.1.1.0.zip|
-| 7.2.0 | 7.2.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.2.0.0/geopoint-clustering-aggregation-7.2.0.0.zip|
-| 7.4.0 | 7.4.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.4.0.0/geopoint-clustering-aggregation-7.4.0.0.zip|
-| 7.5.1 | 7.5.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.5.1.0/geopoint-clustering-aggregation-7.5.1.0.zip|
-| 7.6.0 | 7.6.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.6.0.0/geopoint-clustering-aggregation-7.6.0.0.zip|
-| 7.7.0 | 7.7.0.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.7.0.0/geopoint-clustering-aggregation-7.7.0.0.zip|
-| 7.10.2 | 7.10.2.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.10.2.0/geopoint-clustering-aggregation-7.10.2.0.zip|
-| 7.16.3 | 7.16.3.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.16.3.0/geopoint-clustering-aggregation-7.16.3.0.zip|
-| 7.17.1 | 7.17.1.0 | https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.1.0/geopoint-clustering-aggregation-7.17.1.0.zip|
-
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.6.0/geopoint-clustering-aggregation-7.17.6.0.zip`
 
 
 ### Quickstart
@@ -174,8 +148,7 @@ Result:
 ## Development environment setup
 ### Build
 
-Requires Java 15, 16 or 17.
-Requires Gradle 7.4 (but you should use the packaged gradlew included in this repo).
+Built with Java 17 and Gradle 7.5.1 (use the packaged gradlew included in this repo if you want to build yourself).
 
 ### Development Environment Setup
 
