@@ -47,6 +47,10 @@ dependencies {
     yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.1"
 }
 
+tasks.named("yamlRestTest").configure {
+  systemProperty 'tests.security.manager', 'false'
+}
+
 // Make sure the ES distribution used for rest tests is the "complete" variant
 // Otherwise weirds errors occur (like the geo_shape type is not handled)
 testClusters.configureEach {
