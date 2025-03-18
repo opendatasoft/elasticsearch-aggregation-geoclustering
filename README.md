@@ -4,7 +4,7 @@ This plugin extends Elasticsearch with a `geo_point_clustering` aggregation, all
 It is very similar to what is done with the official [geohash_grid aggregation](https://www.elastic.co/guide/en/elasticsearch/reference/7.10/search-aggregations-bucket-geohashgrid-aggregation.html) except that final clusters are not bound to the geohash grid.
 
 For example, at zoom level 1 with points across France, `geohash_grid` agg will output 3 clusters stuck to geohash cells u, e, s, while `geo_point_clustering` will merge these clusters into one.
-This is done during the reduce phase.  
+This is done during the reduce phase.
 
 Contrary to `geohash_grid` aggregation, buckets keys are a tuple(centroid, geohash cells) instead of geohash cells only, because one cluster can be linked to several geohash cells, due to the cluster merge process during the reduce phase.
 Centroids are built during the shard collect phase.
@@ -16,7 +16,7 @@ Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticse
 ### Install
 
 Install plugin with:
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.6.0/geopoint-clustering-aggregation-7.17.6.0.zip`
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.28.0/geopoint-clustering-aggregation-7.17.28.0.zip`
 
 
 ### Quickstart
@@ -146,9 +146,10 @@ Result:
 
 
 ## Development environment setup
+
 ### Build
 
-Built with Java 17 and Gradle 7.5.1 (use the packaged gradlew included in this repo if you want to build yourself).
+Built with Java 17 and Gradle 8.10.2 (use the packaged gradlew included in this repo if you want to build yourself).
 
 ### Development Environment Setup
 
@@ -162,12 +163,16 @@ or
 ./gradlew assemble  # (to avoid the test suite)
 ```
 
+In case you have to upgrade Gradle, you can do it with `./gradlew wrapper --gradle-version x.y.z`.
+
 Then the following command will start a dockerized ES and will install the previously built plugin:
 ``` shell
-docker-compose up
+docker compose up
 ```
 
-Please be careful during development: you'll need to manually rebuild the .zip using `./gradlew build` on each code 
-change before running `docker-compose` up again.
+You can now check the Elasticsearch instance on `localhost:9200` and the plugin version at `localhost:9200/_cat/plugins`.
+
+Please be careful during development: you'll need to manually rebuild the .zip using `./gradlew build` on each code
+change before running `docker compose up` up again.
 
 > NOTE: In `docker-compose.yml` you can uncomment the debug env and attach a REMOTE JVM on `*:5005` to debug the plugin.
