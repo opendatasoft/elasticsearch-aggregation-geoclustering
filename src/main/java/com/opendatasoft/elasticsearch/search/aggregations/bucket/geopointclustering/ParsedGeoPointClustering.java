@@ -10,7 +10,8 @@ import java.io.IOException;
 import java.util.List;
 
 public class ParsedGeoPointClustering extends ParsedMultiBucketAggregation<ParsedGeoPointClustering.ParsedBucket>
-        implements GeoPointClustering {
+    implements
+        GeoPointClustering {
 
     @Override
     public String getType() {
@@ -23,7 +24,10 @@ public class ParsedGeoPointClustering extends ParsedMultiBucketAggregation<Parse
     }
 
     private static ObjectParser<ParsedGeoPointClustering, Void> PARSER = new ObjectParser<>(
-            ParsedGeoPointClustering.class.getSimpleName(), true, ParsedGeoPointClustering::new);
+        ParsedGeoPointClustering.class.getSimpleName(),
+        true,
+        ParsedGeoPointClustering::new
+    );
     static {
         declareMultiBucketAggregationFields(PARSER, ParsedBucket::fromXContent, ParsedBucket::fromXContent);
     }
@@ -34,8 +38,7 @@ public class ParsedGeoPointClustering extends ParsedMultiBucketAggregation<Parse
         return aggregation;
     }
 
-    public static class ParsedBucket extends ParsedMultiBucketAggregation.ParsedBucket
-            implements GeoPointClustering.Bucket {
+    public static class ParsedBucket extends ParsedMultiBucketAggregation.ParsedBucket implements GeoPointClustering.Bucket {
 
         private String geohashAsString;
 
@@ -55,8 +58,7 @@ public class ParsedGeoPointClustering extends ParsedMultiBucketAggregation<Parse
         }
 
         static ParsedBucket fromXContent(XContentParser parser) throws IOException {
-            return parseXContent(parser, false,
-                    ParsedBucket::new, (p, bucket) -> bucket.geohashAsString = p.textOrNull());
+            return parseXContent(parser, false, ParsedBucket::new, (p, bucket) -> bucket.geohashAsString = p.textOrNull());
         }
     }
 }

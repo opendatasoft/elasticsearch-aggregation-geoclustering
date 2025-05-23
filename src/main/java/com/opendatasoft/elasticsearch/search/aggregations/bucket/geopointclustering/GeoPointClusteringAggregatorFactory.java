@@ -27,17 +27,17 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
     private final int shardSize;
 
     GeoPointClusteringAggregatorFactory(
-            String name,
-            ValuesSourceConfig config,
-            int precision,
-            double radius,
-            double ratio,
-            int requiredSize,
-            int shardSize,
-            AggregationContext context,
-            AggregatorFactory parent,
-            AggregatorFactories.Builder subFactoriesBuilder,
-            Map<String, Object> metaData
+        String name,
+        ValuesSourceConfig config,
+        int precision,
+        double radius,
+        double ratio,
+        int requiredSize,
+        int shardSize,
+        AggregationContext context,
+        AggregatorFactory parent,
+        AggregatorFactories.Builder subFactoriesBuilder,
+        Map<String, Object> metaData
     ) throws IOException {
         super(name, config, context, parent, subFactoriesBuilder, metaData);
         this.precision = precision;
@@ -52,13 +52,15 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
      * doesn't have values.
      */
     @Override
-    protected Aggregator createUnmapped(
-            Aggregator parent,
-            Map<String,
-            Object> metaData
-    ) throws IOException {
-        final InternalAggregation aggregation = new InternalGeoPointClustering(name, radius, ratio, requiredSize,
-                Collections.<InternalGeoPointClustering.Bucket> emptyList(),  metaData);
+    protected Aggregator createUnmapped(Aggregator parent, Map<String, Object> metaData) throws IOException {
+        final InternalAggregation aggregation = new InternalGeoPointClustering(
+            name,
+            radius,
+            ratio,
+            requiredSize,
+            Collections.<InternalGeoPointClustering.Bucket>emptyList(),
+            metaData
+        );
         return new NonCollectingAggregator(name, context, parent, factories, metaData) {
             @Override
             public InternalAggregation buildEmptyAggregation() {
@@ -68,24 +70,22 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
     }
 
     @Override
-    protected Aggregator doCreateInternal(
-            Aggregator parent,
-            CardinalityUpperBound cardinality,
-            Map<String, Object> metaData
-    ) throws IOException {
+    protected Aggregator doCreateInternal(Aggregator parent, CardinalityUpperBound cardinality, Map<String, Object> metaData)
+        throws IOException {
         return new GeoPointClusteringAggregator(
-                name,
-                factories,
-                (ValuesSource.GeoPoint) config.getValuesSource(),
-                precision,
-                radius,
-                ratio,
-                requiredSize,
-                shardSize,
-                context,
-                parent,
-                cardinality,
-                metaData);
+            name,
+            factories,
+            (ValuesSource.GeoPoint) config.getValuesSource(),
+            precision,
+            radius,
+            ratio,
+            requiredSize,
+            shardSize,
+            context,
+            parent,
+            cardinality,
+            metaData
+        );
     }
 
 }

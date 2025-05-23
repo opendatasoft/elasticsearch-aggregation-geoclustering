@@ -23,7 +23,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 
-
 public class GeoPointClusteringAggregator extends BucketsAggregator {
 
     private final int requiredSize;
@@ -36,18 +35,18 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
     private final ValuesSource.GeoPoint valuesSource;
 
     public GeoPointClusteringAggregator(
-            String name,
-            AggregatorFactories factories,
-            ValuesSource.GeoPoint valuesSource,
-            int precision,
-            double radius,
-            double ratio,
-            int requiredSize,
-            int shardSize,
-            AggregationContext aggregationContext,
-            Aggregator parent,
-            CardinalityUpperBound cardinality,
-            Map<String, Object> metaData
+        String name,
+        AggregatorFactories factories,
+        ValuesSource.GeoPoint valuesSource,
+        int precision,
+        double radius,
+        double ratio,
+        int requiredSize,
+        int shardSize,
+        AggregationContext aggregationContext,
+        Aggregator parent,
+        CardinalityUpperBound cardinality,
+        Map<String, Object> metaData
     ) throws IOException {
         super(name, factories, aggregationContext, parent, cardinality, metaData);
         this.valuesSource = valuesSource;
@@ -73,8 +72,7 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
      * collect() is called for each document: it accumulates doc values
      */
     @Override
-    public LeafBucketCollector getLeafCollector(LeafReaderContext ctx,
-                                                final LeafBucketCollector sub) throws IOException {
+    public LeafBucketCollector getLeafCollector(LeafReaderContext ctx, final LeafBucketCollector sub) throws IOException {
         final MultiGeoPointValues values = valuesSource.geoPointValues(ctx);  // GeoPoint field_data
         return new LeafBucketCollectorBase(sub, values) {
             /**
@@ -139,7 +137,7 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
             final int size = (int) Math.min(bucketOrds.size(), shardSize);
 
             // store buckets in a Lucene PriorityQueue
-            InternalGeoPointClustering.BucketPriorityQueue ordered =  new InternalGeoPointClustering.BucketPriorityQueue(size);
+            InternalGeoPointClustering.BucketPriorityQueue ordered = new InternalGeoPointClustering.BucketPriorityQueue(size);
             InternalGeoPointClustering.Bucket spare = null;
             LongKeyedBucketOrds.BucketOrdsEnum ordsEnum = bucketOrds.ordsEnum(owningBucketOrdinals[ordIdx]);
             while (ordsEnum.next()) {
@@ -160,21 +158,22 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
                 topBucketsPerOrd[ordIdx][i] = ordered.pop();
             }
             results[ordIdx] = new InternalGeoPointClustering(
-                name, radius, ratio, requiredSize, Arrays.asList(topBucketsPerOrd[ordIdx]), metadata());
+                name,
+                radius,
+                ratio,
+                requiredSize,
+                Arrays.asList(topBucketsPerOrd[ordIdx]),
+                metadata()
+            );
         }
 
-        buildSubAggsForAllBuckets(
-                topBucketsPerOrd,
-                b -> b.bucketOrd,
-                (b, aggregations) -> b.subAggregations = aggregations
-        );
+        buildSubAggsForAllBuckets(topBucketsPerOrd, b -> b.bucketOrd, (b, aggregations) -> b.subAggregations = aggregations);
         return results;
     }
 
     @Override
     public InternalGeoPointClustering buildEmptyAggregation() {
-        return new InternalGeoPointClustering(
-                name, radius, ratio, requiredSize, Collections.emptyList(), metadata());
+        return new InternalGeoPointClustering(name, radius, ratio, requiredSize, Collections.emptyList(), metadata());
     }
 
     @Override
