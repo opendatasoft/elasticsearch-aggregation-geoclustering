@@ -1,11 +1,17 @@
 buildscript {
     repositories {
+        mavenLocal()
         mavenCentral()
     }
 
     dependencies {
         classpath "org.elasticsearch.gradle:build-tools:${es_version}"
     }
+}
+
+// the spotless plugin is dedicated to format the code
+plugins {
+  id("com.diffplug.spotless") version "7.0.3"
 }
 
 repositories {
@@ -16,6 +22,15 @@ repositories {
     }
 }
 
+// add -Xlint:deprecation to check the Elasticsearch deprecation warning at compile-time
+allprojects {
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:deprecation"
+        }
+    }
+}
+
 group = 'org.elasticsearch.plugin'
 version = "${plugin_version}"
 
@@ -23,6 +38,18 @@ apply plugin: 'java'
 apply plugin: 'idea'
 apply plugin: 'elasticsearch.esplugin'
 apply plugin: 'elasticsearch.yaml-rest-test'
+
+// automatic formatting configuration (the same configuration as elasticsearch)
+spotless {
+    java {
+        importOrderFile('config/elastic.importorder') // import order file as exported from elastic
+        eclipse().configFile('config/formatterConfig.xml')
+        trimTrailingWhitespace()
+        target 'src/**/*.java'
+    }
+}
+
+check.dependsOn spotlessCheck
 
 esplugin {
     name 'geopoint-clustering-aggregation'
@@ -45,6 +72,10 @@ dependencies {
     yamlRestTestImplementation "org.elasticsearch.test:framework:${es_version}"
     // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
     yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.1"
+}
+
+tasks.named("yamlRestTest").configure {
+  systemProperty 'tests.security.manager', 'false'
 }
 
 // Make sure the ES distribution used for rest tests is the "complete" variant
