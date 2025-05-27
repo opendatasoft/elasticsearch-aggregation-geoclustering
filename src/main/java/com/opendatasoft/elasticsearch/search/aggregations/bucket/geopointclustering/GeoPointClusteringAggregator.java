@@ -121,7 +121,6 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
     }
 
     InternalGeoPointClusteringBucket newEmptyBucket() {
-        // return new InternalGeoPointClustering.Bucket(0, null, 0, null);
         return new InternalGeoPointClusteringBucket(0, null, 0, null);
     }
 
@@ -131,17 +130,22 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
      * The resulting buckets are ordered.
      */
     @Override
-    public InternalAggregation[] buildAggregations(LongArray owningBucketOrdinals) throws IOException {
-        try (ObjectArray<InternalGeoPointClusteringBucket[]> topBucketsPerOrd = bigArrays().newObjectArray(owningBucketOrdinals.size())) {
-            // try (ObjectArray<InternalAggregation> results = bigArrays().newObjectArray(topBucketsPerOrd.size())) {
-            InternalAggregation[] results = new InternalAggregation[Math.toIntExact(topBucketsPerOrd.size())];
-            for (long ordIdx = 0; ordIdx < topBucketsPerOrd.size(); ordIdx++) {
+    public InternalAggregation[] buildAggregations(LongArray owningBucketOrds) throws IOException {
+        final int numOrds = Math.toIntExact(owningBucketOrds.size());
+        final InternalGeoPointClustering[] results = new InternalGeoPointClustering[numOrds];
+
+        // Utilisation d'ObjectArray pour les buckets au lieu d'un tableau 2D
+        try (ObjectArray<InternalGeoPointClusteringBucket[]> topBucketsPerOrd = bigArrays().newObjectArray(numOrds)) {
+
+            for (int ordIdx = 0; ordIdx < numOrds; ordIdx++) {
+                final long owningBucketOrd = owningBucketOrds.get(ordIdx);
                 final int size = (int) Math.min(bucketOrds.size(), shardSize);
 
                 // store buckets in a Lucene PriorityQueue
                 InternalGeoPointClustering.BucketPriorityQueue ordered = new InternalGeoPointClustering.BucketPriorityQueue(size);
                 InternalGeoPointClusteringBucket spare = null;
-                LongKeyedBucketOrds.BucketOrdsEnum ordsEnum = bucketOrds.ordsEnum(owningBucketOrdinals.get(ordIdx));
+
+                LongKeyedBucketOrds.BucketOrdsEnum ordsEnum = bucketOrds.ordsEnum(owningBucketOrd);
                 while (ordsEnum.next()) {
                     if (spare == null) {
                         spare = newEmptyBucket();
@@ -155,20 +159,19 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
                 }
 
                 // feed the final aggregation from the PriorityQueue
-                topBucketsPerOrd.set(ordIdx, new InternalGeoPointClusteringBucket[(int) ordered.size()]);
+                InternalGeoPointClusteringBucket[] buckets = new InternalGeoPointClusteringBucket[ordered.size()];
                 for (int i = ordered.size() - 1; i >= 0; --i) {
-                    topBucketsPerOrd.get(ordIdx)[i] = ordered.pop();
+                    buckets[i] = ordered.pop();
                 }
-                results[Math.toIntExact(ordIdx)] = new InternalGeoPointClustering(
-                    name,
-                    radius,
-                    ratio,
-                    requiredSize,
-                    Arrays.asList(topBucketsPerOrd.get(ordIdx)),
-                    metadata()
-                );
+
+                topBucketsPerOrd.set(ordIdx, buckets);
+
+                results[ordIdx] = new InternalGeoPointClustering(name, radius, ratio, requiredSize, Arrays.asList(buckets), metadata());
             }
+
+            // Adaptation pour buildSubAggsForAllBuckets avec ObjectArray
             buildSubAggsForAllBuckets(topBucketsPerOrd, b -> b.bucketOrd, (b, aggregations) -> b.subAggregations = aggregations);
+
             return results;
         }
     }
