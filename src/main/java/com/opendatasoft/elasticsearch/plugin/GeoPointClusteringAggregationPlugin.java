@@ -17,7 +17,7 @@ public class GeoPointClusteringAggregationPlugin extends Plugin implements Searc
             new AggregationSpec(
                 GeoPointClusteringAggregationBuilder.NAME,
                 GeoPointClusteringAggregationBuilder::new,
-                GeoPointClusteringAggregationBuilder::parse
+                GeoPointClusteringAggregationBuilder.PARSER
             ).addResultReader(InternalGeoPointClustering::new)
                 .setAggregatorRegistrar(GeoPointClusteringAggregationBuilder::registerAggregators)
         );

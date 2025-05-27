@@ -30,15 +30,19 @@ public class GeoPointClusteringAggregationBuilder extends ValuesSourceAggregatio
     public static final ValuesSourceRegistry.RegistryKey<GeoPointClusteringAggregatorSupplier> REGISTRY_KEY =
         new ValuesSourceRegistry.RegistryKey<>(NAME, GeoPointClusteringAggregatorSupplier.class);
 
+    public static final ObjectParser<GeoPointClusteringAggregationBuilder, String> PARSER = ObjectParser.fromBuilder(
+        NAME,
+        GeoPointClusteringAggregationBuilder::new
+    );
+
     static final int DEFAULT_ZOOM = 1;
     static final int DEFAULT_EXTENT = 256;
     static final int DEFAULT_MAX_NUM_CELLS = 10000;
     static final int DEFAULT_RADIUS = 40;
     static final double DEFAULT_RATIO = 0;
 
-    private static final ObjectParser<GeoPointClusteringAggregationBuilder, Void> PARSER;
     static {
-        PARSER = new ObjectParser<>(GeoPointClusteringAggregationBuilder.NAME);
+        // PARSER = new ObjectParser<>(GeoPointClusteringAggregationBuilder.NAME);
         ValuesSourceAggregationBuilder.declareFields(PARSER, false, false, false);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::size, GeoPointClusteringParams.FIELD_SIZE);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::shardSize, GeoPointClusteringParams.FIELD_SHARD_SIZE);
