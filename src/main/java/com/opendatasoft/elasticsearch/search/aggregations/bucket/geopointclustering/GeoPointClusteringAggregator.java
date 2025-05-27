@@ -119,8 +119,9 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
         };
     }
 
-    InternalGeoPointClustering.Bucket newEmptyBucket() {
-        return new InternalGeoPointClustering.Bucket(0, null, 0, null);
+    InternalGeoPointClusteringBucket newEmptyBucket() {
+        // return new InternalGeoPointClustering.Bucket(0, null, 0, null);
+        return new InternalGeoPointClusteringBucket(0, null, 0, null);
     }
 
     /**

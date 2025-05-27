@@ -58,7 +58,7 @@ public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorF
             radius,
             ratio,
             requiredSize,
-            Collections.<InternalGeoPointClustering.Bucket>emptyList(),
+            Collections.<InternalGeoPointClusteringBucket>emptyList(),
             metaData
         );
         return new NonCollectingAggregator(name, context, parent, factories, metaData) {
