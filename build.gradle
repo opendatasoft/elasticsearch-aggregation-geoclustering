@@ -70,6 +70,7 @@ dependencies {
     implementation "org.elasticsearch:elasticsearch:${es_version}"
 
     yamlRestTestImplementation "org.elasticsearch.test:framework:${es_version}"
+    yamlRestTestImplementation "org.elasticsearch.test:yaml-rest-runner:${es_version}"
     // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
     yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.1"
 }
