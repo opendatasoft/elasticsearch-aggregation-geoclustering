@@ -1,6 +1,8 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.TransportVersion;
+import org.elasticsearch.TransportVersions;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
@@ -73,6 +75,11 @@ public class GeoPointClusteringAggregationBuilder extends ValuesSourceAggregatio
         this.ratio = clone.ratio;
         this.requiredSize = clone.requiredSize;
         this.shardSize = clone.shardSize;
+    }
+
+    @Override
+    public TransportVersion getMinimalSupportedVersion() {
+        return TransportVersions.MINIMUM_COMPATIBLE;
     }
 
     @Override
@@ -151,11 +158,6 @@ public class GeoPointClusteringAggregationBuilder extends ValuesSourceAggregatio
         }
         this.ratio = ratio;
         return this;
-    }
-
-    @Override
-    protected ValuesSourceRegistry.RegistryKey<?> getRegistryKey() {
-        return REGISTRY_KEY;
     }
 
     public GeoPointClusteringAggregationBuilder size(int size) {
