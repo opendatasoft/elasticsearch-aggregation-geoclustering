@@ -1,12 +1,13 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
-import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.ScoreMode;
 import org.elasticsearch.common.geo.GeoPoint;
+import org.elasticsearch.common.util.LongArray;
 import org.elasticsearch.common.util.ObjectArray;
 import org.elasticsearch.core.Releasables;
 import org.elasticsearch.geometry.utils.Geohash;
 import org.elasticsearch.index.fielddata.MultiGeoPointValues;
+import org.elasticsearch.search.aggregations.AggregationExecutionContext;
 import org.elasticsearch.search.aggregations.Aggregator;
 import org.elasticsearch.search.aggregations.AggregatorFactories;
 import org.elasticsearch.search.aggregations.CardinalityUpperBound;
@@ -72,8 +73,8 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
      * collect() is called for each document: it accumulates doc values
      */
     @Override
-    public LeafBucketCollector getLeafCollector(LeafReaderContext ctx, final LeafBucketCollector sub) throws IOException {
-        final MultiGeoPointValues values = valuesSource.geoPointValues(ctx);  // GeoPoint field_data
+    public LeafBucketCollector getLeafCollector(AggregationExecutionContext aggCtx, final LeafBucketCollector sub) throws IOException {
+        final MultiGeoPointValues values = valuesSource.geoPointValues(aggCtx.getLeafReaderContext());  // GeoPoint field_data
         return new LeafBucketCollectorBase(sub, values) {
             /**
              * Collect the given {@code doc} in the bucket owned by {@code owningBucketOrdinal}.
@@ -130,46 +131,46 @@ public class GeoPointClusteringAggregator extends BucketsAggregator {
      * The resulting buckets are ordered.
      */
     @Override
-    public InternalAggregation[] buildAggregations(long[] owningBucketOrdinals) throws IOException {
-        InternalGeoPointClustering.Bucket[][] topBucketsPerOrd = new InternalGeoPointClustering.Bucket[owningBucketOrdinals.length][];
-        InternalGeoPointClustering[] results = new InternalGeoPointClustering[owningBucketOrdinals.length];
+    public InternalAggregation[] buildAggregations(LongArray owningBucketOrdinals) throws IOException {
+        try (ObjectArray<InternalGeoPointClusteringBucket[]> topBucketsPerOrd = bigArrays().newObjectArray(owningBucketOrdinals.size())) {
+            // try (ObjectArray<InternalAggregation> results = bigArrays().newObjectArray(topBucketsPerOrd.size())) {
+            InternalAggregation[] results = new InternalAggregation[Math.toIntExact(topBucketsPerOrd.size())];
+            for (long ordIdx = 0; ordIdx < topBucketsPerOrd.size(); ordIdx++) {
+                final int size = (int) Math.min(bucketOrds.size(), shardSize);
 
-        for (int ordIdx = 0; ordIdx < owningBucketOrdinals.length; ordIdx++) {
-            final int size = (int) Math.min(bucketOrds.size(), shardSize);
+                // store buckets in a Lucene PriorityQueue
+                InternalGeoPointClustering.BucketPriorityQueue ordered = new InternalGeoPointClustering.BucketPriorityQueue(size);
+                InternalGeoPointClusteringBucket spare = null;
+                LongKeyedBucketOrds.BucketOrdsEnum ordsEnum = bucketOrds.ordsEnum(owningBucketOrdinals.get(ordIdx));
+                while (ordsEnum.next()) {
+                    if (spare == null) {
+                        spare = newEmptyBucket();
+                    }
 
-            // store buckets in a Lucene PriorityQueue
-            InternalGeoPointClustering.BucketPriorityQueue ordered = new InternalGeoPointClustering.BucketPriorityQueue(size);
-            InternalGeoPointClustering.Bucket spare = null;
-            LongKeyedBucketOrds.BucketOrdsEnum ordsEnum = bucketOrds.ordsEnum(owningBucketOrdinals[ordIdx]);
-            while (ordsEnum.next()) {
-                if (spare == null) {
-                    spare = newEmptyBucket();
+                    spare.geohashAsLong = ordsEnum.value();
+                    spare.centroid = centroids.get(ordsEnum.ord());
+                    spare.docCount = bucketDocCount(ordsEnum.ord());
+                    spare.bucketOrd = ordsEnum.ord();
+                    spare = ordered.insertWithOverflow(spare);
                 }
 
-                spare.geohashAsLong = ordsEnum.value();
-                spare.centroid = centroids.get(ordsEnum.ord());
-                spare.docCount = bucketDocCount(ordsEnum.ord());
-                spare.bucketOrd = ordsEnum.ord();
-                spare = ordered.insertWithOverflow(spare);
+                // feed the final aggregation from the PriorityQueue
+                topBucketsPerOrd.set(ordIdx, new InternalGeoPointClusteringBucket[(int) ordered.size()]);
+                for (int i = ordered.size() - 1; i >= 0; --i) {
+                    topBucketsPerOrd.get(ordIdx)[i] = ordered.pop();
+                }
+                results[Math.toIntExact(ordIdx)] = new InternalGeoPointClustering(
+                    name,
+                    radius,
+                    ratio,
+                    requiredSize,
+                    Arrays.asList(topBucketsPerOrd.get(ordIdx)),
+                    metadata()
+                );
             }
-
-            // feed the final aggregation from the PriorityQueue
-            topBucketsPerOrd[ordIdx] = new InternalGeoPointClustering.Bucket[ordered.size()];
-            for (int i = ordered.size() - 1; i >= 0; --i) {
-                topBucketsPerOrd[ordIdx][i] = ordered.pop();
-            }
-            results[ordIdx] = new InternalGeoPointClustering(
-                name,
-                radius,
-                ratio,
-                requiredSize,
-                Arrays.asList(topBucketsPerOrd[ordIdx]),
-                metadata()
-            );
+            buildSubAggsForAllBuckets(topBucketsPerOrd, b -> b.bucketOrd, (b, aggregations) -> b.subAggregations = aggregations);
+            return results;
         }
-
-        buildSubAggsForAllBuckets(topBucketsPerOrd, b -> b.bucketOrd, (b, aggregations) -> b.subAggregations = aggregations);
-        return results;
     }
 
     @Override

@@ -87,70 +87,195 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<I
         return unmodifiableList(buckets);
     }
 
+    @Override
+    protected AggregatorReducer getLeaderReducer(AggregationReduceContext context, int size) {
+        return new AggregatorReducer() {
+            // LongObjectPagedHashMap<List<InternalGeoPointClusteringBucket>> buckets = new LongObjectPagedHashMap<>(size,
+            // context.bigArrays());
+            LongObjectPagedHashMap<List<InternalGeoPointClusteringBucket>> buckets = null;
+            List<InternalGeoPointClusteringBucket> final_clusters = new ArrayList<>();
+
+            @Override
+            public void accept(InternalAggregation aggregation) {
+                InternalGeoPointClustering shard_clusters = (InternalGeoPointClustering) aggregation;
+                if (buckets == null) {
+                    buckets = new LongObjectPagedHashMap<>(shard_clusters.buckets.size(), context.bigArrays());
+                }
+                for (InternalGeoPointClusteringBucket bucket : shard_clusters.getBuckets()) {
+                    List<InternalGeoPointClusteringBucket> existingBuckets = buckets.get(bucket.geohashAsLong);
+                    if (existingBuckets == null) {
+                        existingBuckets = new ArrayList<>(size);
+                        buckets.put(bucket.geohashAsLong, existingBuckets);
+                    }
+                    existingBuckets.add(bucket);
+                }
+
+                // cast the buckets HashMap to a Lucene PriorityQueue
+                // the priority queue is used to retain the top N bucket
+                final int size = Math.toIntExact(context.isFinalReduce() ? buckets.size() : Math.min(requiredSize, buckets.size()));
+                BucketPriorityQueue ordered = new BucketPriorityQueue(size);
+                for (LongObjectPagedHashMap.Cursor<List<InternalGeoPointClusteringBucket>> cursor : buckets) {
+                    List<InternalGeoPointClusteringBucket> sameCellBuckets = cursor.value;
+                    ordered.insertWithOverflow(reduceBucket(sameCellBuckets, context));
+                }
+                buckets.close();
+
+                // cast Lucene PriorityQueue to GeoPointClustering buckets
+                InternalGeoPointClusteringBucket[] candidate_clusters = new InternalGeoPointClusteringBucket[ordered.size()];
+                for (int i = ordered.size() - 1; i >= 0; i--) {
+                    candidate_clusters[i] = ordered.pop();
+                }
+
+                // merge buckets if needed, according to radius and ratio plugin parameters
+                for (InternalGeoPointClusteringBucket bucket : candidate_clusters) {
+                    if (bucket.visited) {
+                        continue;
+                    }
+
+                    bucket.visited = true;
+                    List<InternalGeoPointClusteringBucket> revisit = new ArrayList<>();
+                    for (InternalGeoPointClusteringBucket potentialNeighbor : candidate_clusters) {
+                        computeDistance(bucket, potentialNeighbor, revisit, context);
+                    }
+                    for (InternalGeoPointClusteringBucket potentialNeighbor : revisit) {
+                        computeDistance(bucket, potentialNeighbor, null, context);
+                    }
+                    final_clusters.add(bucket);
+                }
+            }
+
+            @Override
+            public InternalAggregation get() {
+                return new InternalGeoPointClustering(getName(), radius, ratio, requiredSize, final_clusters, getMetadata());
+            }
+
+        };
+
+        // // collect and deduplicate buckets from each shard
+        // // cast an array of InternalGeoPointClustering agg to a HashMap of buckets
+        // // buckets are deduplicated
+        // for (InternalAggregation shard_aggregation : aggregations) {
+        // InternalGeoPointClustering shard_clusters = (InternalGeoPointClustering) shard_aggregation;
+        // if (buckets == null) {
+        // buckets = new LongObjectPagedHashMap<>(shard_clusters.buckets.size(), reduceContext.bigArrays());
+        // }
+        // for (InternalGeoPointClusteringBucket bucket : shard_clusters.buckets) {
+        // List<InternalGeoPointClusteringBucket> existingBuckets = buckets.get(bucket.geohashAsLong);
+        // if (existingBuckets == null) {
+        // existingBuckets = new ArrayList<>(aggregations.size());
+        // buckets.put(bucket.geohashAsLong, existingBuckets);
+        // }
+        // existingBuckets.add(bucket);
+        // }
+        // }
+
+        // // cast the buckets HashMap to a Lucene PriorityQueue
+        // // the priority queue is used to retain the top N bucket
+        // final int size = Math.toIntExact(reduceContext.isFinalReduce() ? buckets.size() : Math.min(requiredSize, buckets.size()));
+        // BucketPriorityQueue ordered = new BucketPriorityQueue(size);
+        // for (LongObjectPagedHashMap.Cursor<List<InternalGeoPointClusteringBucket>> cursor : buckets) {
+        // List<InternalGeoPointClusteringBucket> sameCellBuckets = cursor.value;
+        // ordered.insertWithOverflow(reduceBucket(sameCellBuckets, reduceContext));
+        // }
+        // buckets.close();
+
+        // // cast Lucene PriorityQueue to GeoPointClustering buckets
+        // InternalGeoPointClusteringBucket[] candidate_clusters = new InternalGeoPointClusteringBucket[ordered.size()];
+        // for (int i = ordered.size() - 1; i >= 0; i--) {
+        // candidate_clusters[i] = ordered.pop();
+        // }
+
+        // // merge buckets if needed, according to radius and ratio plugin parameters
+        // List<InternalGeoPointClusteringBucket> final_clusters = new ArrayList<>();
+        // for (InternalGeoPointClusteringBucket bucket : candidate_clusters) {
+        // if (bucket.visited) {
+        // continue;
+        // }
+
+        // bucket.visited = true;
+        // List<InternalGeoPointClusteringBucket> revisit = new ArrayList<>();
+        // for (InternalGeoPointClusteringBucket potentialNeighbor : candidate_clusters) {
+        // computeDistance(bucket, potentialNeighbor, revisit, reduceContext);
+        // }
+        // for (InternalGeoPointClusteringBucket potentialNeighbor : revisit) {
+        // computeDistance(bucket, potentialNeighbor, null, reduceContext);
+        // }
+        // final_clusters.add(bucket);
+        // }
+
+        // return new InternalGeoPointClustering(getName(), radius, ratio, requiredSize, final_clusters, getMetadata());
+    }
+
+    protected Reader<InternalGeoPointClusteringBucket> getBucketReader() {
+        return InternalGeoPointClusteringBucket::new;
+    }
+
     /**
      * Reduces the given aggregations to a single one and returns it.
      */
-    @Override
-    public InternalGeoPointClustering reduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
-        LongObjectPagedHashMap<List<Bucket>> buckets = null;
 
-        // collect and deduplicate buckets from each shard
-        // cast an array of InternalGeoPointClustering agg to a HashMap of buckets
-        // buckets are deduplicated
-        for (InternalAggregation shard_aggregation : aggregations) {
-            InternalGeoPointClustering shard_clusters = (InternalGeoPointClustering) shard_aggregation;
-            if (buckets == null) {
-                buckets = new LongObjectPagedHashMap<>(shard_clusters.buckets.size(), reduceContext.bigArrays());
-            }
-            for (Bucket bucket : shard_clusters.buckets) {
-                List<Bucket> existingBuckets = buckets.get(bucket.geohashAsLong);
-                if (existingBuckets == null) {
-                    existingBuckets = new ArrayList<>(aggregations.size());
-                    buckets.put(bucket.geohashAsLong, existingBuckets);
-                }
-                existingBuckets.add(bucket);
-            }
-        }
+    /**
+     * Reduces the given aggregations to a single one and returns it.
+     */
+    // @Override
+    // public InternalGeoPointClustering reduce(List<InternalAggregation> aggregations, ReduceContext reduceContext) {
+    // LongObjectPagedHashMap<List<InternalGeoPointClusteringBucket>> buckets = null;
 
-        // cast the buckets HashMap to a Lucene PriorityQueue
-        // the priority queue is used to retain the top N bucket
-        final int size = Math.toIntExact(reduceContext.isFinalReduce() ? buckets.size() : Math.min(requiredSize, buckets.size()));
-        BucketPriorityQueue ordered = new BucketPriorityQueue(size);
-        for (LongObjectPagedHashMap.Cursor<List<Bucket>> cursor : buckets) {
-            List<Bucket> sameCellBuckets = cursor.value;
-            ordered.insertWithOverflow(reduceBucket(sameCellBuckets, reduceContext));
-        }
-        buckets.close();
+    // // collect and deduplicate buckets from each shard
+    // // cast an array of InternalGeoPointClustering agg to a HashMap of buckets
+    // // buckets are deduplicated
+    // for (InternalAggregation shard_aggregation : aggregations) {
+    // InternalGeoPointClustering shard_clusters = (InternalGeoPointClustering) shard_aggregation;
+    // if (buckets == null) {
+    // buckets = new LongObjectPagedHashMap<>(shard_clusters.buckets.size(), reduceContext.bigArrays());
+    // }
+    // for (InternalGeoPointClusteringBucket bucket : shard_clusters.buckets) {
+    // List<InternalGeoPointClusteringBucket> existingBuckets = buckets.get(bucket.geohashAsLong);
+    // if (existingBuckets == null) {
+    // existingBuckets = new ArrayList<>(aggregations.size());
+    // buckets.put(bucket.geohashAsLong, existingBuckets);
+    // }
+    // existingBuckets.add(bucket);
+    // }
+    // }
 
-        // cast Lucene PriorityQueue to GeoPointClustering buckets
-        Bucket[] candidate_clusters = new Bucket[ordered.size()];
-        for (int i = ordered.size() - 1; i >= 0; i--) {
-            candidate_clusters[i] = ordered.pop();
-        }
+    // // cast the buckets HashMap to a Lucene PriorityQueue
+    // // the priority queue is used to retain the top N bucket
+    // final int size = Math.toIntExact(reduceContext.isFinalReduce() ? buckets.size() : Math.min(requiredSize, buckets.size()));
+    // BucketPriorityQueue ordered = new BucketPriorityQueue(size);
+    // for (LongObjectPagedHashMap.Cursor<List<InternalGeoPointClusteringBucket>> cursor : buckets) {
+    // List<InternalGeoPointClusteringBucket> sameCellBuckets = cursor.value;
+    // ordered.insertWithOverflow(reduceBucket(sameCellBuckets, reduceContext));
+    // }
+    // buckets.close();
 
-        // merge buckets if needed, according to radius and ratio plugin parameters
-        List<Bucket> final_clusters = new ArrayList<>();
-        for (Bucket bucket : candidate_clusters) {
-            if (bucket.visited) {
-                continue;
-            }
+    // // cast Lucene PriorityQueue to GeoPointClustering buckets
+    // InternalGeoPointClusteringBucket[] candidate_clusters = new InternalGeoPointClusteringBucket[ordered.size()];
+    // for (int i = ordered.size() - 1; i >= 0; i--) {
+    // candidate_clusters[i] = ordered.pop();
+    // }
 
-            bucket.visited = true;
-            List<Bucket> revisit = new ArrayList<>();
-            for (Bucket potentialNeighbor : candidate_clusters) {
-                computeDistance(bucket, potentialNeighbor, revisit, reduceContext);
-            }
-            for (Bucket potentialNeighbor : revisit) {
-                computeDistance(bucket, potentialNeighbor, null, reduceContext);
-            }
-            final_clusters.add(bucket);
-        }
+    // // merge buckets if needed, according to radius and ratio plugin parameters
+    // List<InternalGeoPointClusteringBucket> final_clusters = new ArrayList<>();
+    // for (InternalGeoPointClusteringBucket bucket : candidate_clusters) {
+    // if (bucket.visited) {
+    // continue;
+    // }
 
-        return new InternalGeoPointClustering(getName(), radius, ratio, requiredSize, final_clusters, getMetadata());
-    }
+    // bucket.visited = true;
+    // List<InternalGeoPointClusteringBucket> revisit = new ArrayList<>();
+    // for (InternalGeoPointClusteringBucket potentialNeighbor : candidate_clusters) {
+    // computeDistance(bucket, potentialNeighbor, revisit, reduceContext);
+    // }
+    // for (InternalGeoPointClusteringBucket potentialNeighbor : revisit) {
+    // computeDistance(bucket, potentialNeighbor, null, reduceContext);
+    // }
+    // final_clusters.add(bucket);
+    // }
 
-    @Override
-    public Bucket reduceBucket(List<Bucket> buckets, ReduceContext context) {
+    // return new InternalGeoPointClustering(getName(), radius, ratio, requiredSize, final_clusters, getMetadata());
+    // }
+
     // @Override
     public InternalGeoPointClusteringBucket reduceBucket(List<InternalGeoPointClusteringBucket> buckets, AggregationReduceContext context) {
         List<InternalAggregations> aggregationsList = new ArrayList<>(buckets.size());
