@@ -1,17 +1,19 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
 import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.TransportVersion;
+import org.elasticsearch.TransportVersions;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.io.stream.StreamInput;
 import org.elasticsearch.common.io.stream.StreamOutput;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregatorFactories;
 import org.elasticsearch.search.aggregations.AggregatorFactories.Builder;
 import org.elasticsearch.search.aggregations.AggregatorFactory;
 import org.elasticsearch.search.aggregations.bucket.BucketUtils;
 import org.elasticsearch.search.aggregations.support.AggregationContext;
 import org.elasticsearch.search.aggregations.support.CoreValuesSourceType;
 import org.elasticsearch.search.aggregations.support.ValuesSourceAggregationBuilder;
-import org.elasticsearch.search.aggregations.support.ValuesSourceAggregatorFactory;
 import org.elasticsearch.search.aggregations.support.ValuesSourceConfig;
 import org.elasticsearch.search.aggregations.support.ValuesSourceRegistry;
 import org.elasticsearch.search.aggregations.support.ValuesSourceType;
@@ -23,6 +25,13 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 
+/**
+ * Aggregation builder for the GeoPointClustering aggregation.
+ * This aggregation clusters geo-points into cells based on a specified zoom level and radius.
+ * It is designed to work with geo-point values and provides options for controlling the clustering behavior.
+ * It is inspired by the GeoHashGrid aggregation but adapted for clustering geo-points. It cannot extend the
+ * GeoGridAggregation because base parameters are not compatible (radius, zoom).
+ */
 public class GeoPointClusteringAggregationBuilder extends
         ValuesSourceAggregationBuilder<GeoPointClusteringAggregationBuilder> {
     public static final String NAME = "geo_point_clustering";
@@ -35,9 +44,12 @@ public class GeoPointClusteringAggregationBuilder extends
     static final int DEFAULT_RADIUS = 40;
     static final double DEFAULT_RATIO = 0;
 
-    private static final ObjectParser<GeoPointClusteringAggregationBuilder, Void> PARSER;
+    public static final ObjectParser<GeoPointClusteringAggregationBuilder, String> PARSER = ObjectParser.fromBuilder(
+            NAME,
+            GeoPointClusteringAggregationBuilder::new
+    );
+
     static {
-        PARSER = new ObjectParser<>(GeoPointClusteringAggregationBuilder.NAME);
         ValuesSourceAggregationBuilder.declareFields(PARSER, false, false, false);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::size, GeoPointClusteringParams.FIELD_SIZE);
         PARSER.declareInt(GeoPointClusteringAggregationBuilder::shardSize, GeoPointClusteringParams.FIELD_SHARD_SIZE);
@@ -53,7 +65,7 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     private int zoom = DEFAULT_ZOOM;
-    private int radius = DEFAULT_RADIUS;
+    private double radius = DEFAULT_RADIUS;
     private int extent = DEFAULT_EXTENT;
     private int requiredSize = DEFAULT_MAX_NUM_CELLS;
     private int shardSize = -1;
@@ -80,12 +92,13 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     /**
-     * Read from a stream.
+     * Deserializes a GeoPointClusteringAggregationBuilder instance from the input stream.
+     * Used to reconstruct the aggregation builder when reading from a distributed node.
      */
     public GeoPointClusteringAggregationBuilder(StreamInput in) throws IOException {
         super(in);
         zoom = in.readInt();
-        radius = in.readInt();
+        radius = in.readDouble();
         extent = in.readInt();
         ratio = in.readDouble();
         requiredSize = in.readVInt();
@@ -93,12 +106,13 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     /**
-     * Write to stream.
+     * Serializes GeoPointClusteringAggregationBuilder to the output stream.
+     * This method is called on the coordinating node to send the aggregation definition to distributed nodes.
      */
     @Override
     protected void innerWriteTo(StreamOutput out) throws IOException {
         out.writeInt(zoom);
-        out.writeInt(radius);
+        out.writeDouble(radius);
         out.writeInt(extent);
         out.writeDouble(ratio);
         out.writeVInt(requiredSize);
@@ -133,10 +147,6 @@ public class GeoPointClusteringAggregationBuilder extends
         return this;
     }
 
-    public int extent() {
-        return extent;
-    }
-
     public GeoPointClusteringAggregationBuilder radius(int radius) {
         if (radius <= 0) {
             throw new IllegalArgumentException(
@@ -153,11 +163,6 @@ public class GeoPointClusteringAggregationBuilder extends
         }
         this.ratio = ratio;
         return this;
-    }
-
-    @Override
-    protected ValuesSourceRegistry.RegistryKey<?> getRegistryKey() {
-        return REGISTRY_KEY;
     }
 
     public GeoPointClusteringAggregationBuilder size(int size) {
@@ -182,8 +187,20 @@ public class GeoPointClusteringAggregationBuilder extends
         return this;
         }
 
+    /**
+     * Builds the internal aggregator factory for the geo-point clustering aggregation.
+     * This factory is instantiated during the aggregation execution phase, on each shard.
+     * This is the “plan” for building the actual aggregator.
+     *
+     * @param context The aggregation context containing execution details.
+     * @param config The configuration for the values source.
+     * @param parent The parent aggregator factory in the aggregation tree.
+     * @param subFactoriesBuilder The builder for sub-aggregator factories.
+     * @return A new instance of {@link GeoPointClusteringAggregatorFactory}.
+     * @throws IOException If an I/O error occurs during the factory creation.
+     */
     @Override
-    protected ValuesSourceAggregatorFactory innerBuild(
+    protected GeoPointClusteringAggregatorFactory innerBuild(
             AggregationContext context,
             ValuesSourceConfig config,
             AggregatorFactory parent,
@@ -209,7 +226,7 @@ public class GeoPointClusteringAggregationBuilder extends
             shardSize = requiredSize;
         }
 
-        int pixelRadius = this.radius;
+        double pixelRadius = this.radius;
 
         double mapWidthHeight = extent * Math.pow(2, zoom);
 
@@ -273,6 +290,11 @@ public class GeoPointClusteringAggregationBuilder extends
     @Override
     public String getType() {
         return NAME;
+    }
+
+    @Override
+    public TransportVersion getMinimalSupportedVersion() {
+        return TransportVersions.ZERO;
     }
 
     public static void registerAggregators(ValuesSourceRegistry.Builder builder) {

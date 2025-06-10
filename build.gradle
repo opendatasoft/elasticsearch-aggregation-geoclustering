@@ -1,3 +1,7 @@
+/*
+Gradle build file for development building, testing, and packaging.
+*/
+
 buildscript {
     repositories {
         mavenCentral()
@@ -43,14 +47,21 @@ dependencies {
     implementation "org.elasticsearch:elasticsearch:${es_version}"
 
     yamlRestTestImplementation "org.elasticsearch.test:framework:${es_version}"
+    yamlRestTestImplementation "org.elasticsearch.test:yaml-rest-runner:${es_version}"
     // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
     yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.1"
 }
 
-// Make sure the ES distribution used for rest tests is the "complete" variant
-// Otherwise weirds errors occur (like the geo_shape type is not handled)
 testClusters.configureEach {
-    testDistribution = 'DEFAULT'
-    // disable security to disable failing warnings
-    setting 'xpack.security.enabled', 'false'
+        // Use full distribution otherwise the geo_shape type is not fully handled
+        testDistribution = 'DEFAULT'
+
+        // Disable security (avoids annoying warnings/failures with xpack features)
+        setting 'xpack.security.enabled', 'false'
+
+        // Logging levels for debugging: logs are located in build/testclusters/runTask-0/logs/
+        setting 'logger._root', 'DEBUG'
+        setting 'logger.org.elasticsearch.plugins', 'DEBUG'
+        setting 'logger.org.elasticsearch.cluster', 'DEBUG'
+        setting 'logger.org.elasticsearch.cluster.metadata', 'TRACE'
 }

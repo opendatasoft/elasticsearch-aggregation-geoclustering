@@ -20,6 +20,9 @@ import java.util.Map;
  */
 public class GeoPointClusteringAggregatorFactory extends ValuesSourceAggregatorFactory {
 
+//    private final GeoPointClusteringAggregatorSupplier aggregatorSupplier;
+    // while Elasticsearch’s GeoHashGrid uses a precision integer from 0 to 12, we use a precision (zoom) level from 0
+    // to 25 following typical web map conventions
     private final int precision;
     private final double radius;
     private final double ratio;
