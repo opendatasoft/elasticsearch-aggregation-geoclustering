@@ -32,11 +32,10 @@ import java.util.Objects;
  * It is inspired by the GeoHashGrid aggregation but adapted for clustering geo-points. It cannot extend the
  * GeoGridAggregation because base parameters are not compatible (radius, zoom).
  */
-public class GeoPointClusteringAggregationBuilder extends
-        ValuesSourceAggregationBuilder<GeoPointClusteringAggregationBuilder> {
+public class GeoPointClusteringAggregationBuilder extends ValuesSourceAggregationBuilder<GeoPointClusteringAggregationBuilder> {
     public static final String NAME = "geo_point_clustering";
     public static final ValuesSourceRegistry.RegistryKey<GeoPointClusteringAggregatorSupplier> REGISTRY_KEY =
-            new ValuesSourceRegistry.RegistryKey<>(NAME, GeoPointClusteringAggregatorSupplier.class);
+        new ValuesSourceRegistry.RegistryKey<>(NAME, GeoPointClusteringAggregatorSupplier.class);
 
     static final int DEFAULT_ZOOM = 1;
     static final int DEFAULT_EXTENT = 256;
@@ -45,8 +44,8 @@ public class GeoPointClusteringAggregationBuilder extends
     static final double DEFAULT_RATIO = 0;
 
     public static final ObjectParser<GeoPointClusteringAggregationBuilder, String> PARSER = ObjectParser.fromBuilder(
-            NAME,
-            GeoPointClusteringAggregationBuilder::new
+        NAME,
+        GeoPointClusteringAggregationBuilder::new
     );
 
     static {
@@ -59,8 +58,7 @@ public class GeoPointClusteringAggregationBuilder extends
         PARSER.declareDouble(GeoPointClusteringAggregationBuilder::ratio, GeoPointClusteringParams.FIELD_RATIO);
     }
 
-    public static GeoPointClusteringAggregationBuilder parse(String aggregationName, XContentParser parser)
-            throws IOException {
+    public static GeoPointClusteringAggregationBuilder parse(String aggregationName, XContentParser parser) throws IOException {
         return PARSER.parse(parser, new GeoPointClusteringAggregationBuilder(aggregationName), null);
     }
 
@@ -76,7 +74,10 @@ public class GeoPointClusteringAggregationBuilder extends
     }
 
     protected GeoPointClusteringAggregationBuilder(
-            GeoPointClusteringAggregationBuilder clone, Builder factoriesBuilder, Map<String, Object> metaData) {
+        GeoPointClusteringAggregationBuilder clone,
+        Builder factoriesBuilder,
+        Map<String, Object> metaData
+    ) {
         super(clone, factoriesBuilder, metaData);
         this.zoom = clone.zoom;
         this.radius = clone.radius;
@@ -140,8 +141,7 @@ public class GeoPointClusteringAggregationBuilder extends
 
     public GeoPointClusteringAggregationBuilder extent(int extent) {
         if (extent <= 0) {
-            throw new IllegalArgumentException(
-                    "[extent] must be greater than 0. Found [" + extent + "] in [" + name + "]");
+            throw new IllegalArgumentException("[extent] must be greater than 0. Found [" + extent + "] in [" + name + "]");
         }
         this.extent = extent;
         return this;
@@ -149,8 +149,7 @@ public class GeoPointClusteringAggregationBuilder extends
 
     public GeoPointClusteringAggregationBuilder radius(int radius) {
         if (radius <= 0) {
-            throw new IllegalArgumentException(
-                    "[radius] must be greater than 0. Found [" + radius + "] in [" + name + "]");
+            throw new IllegalArgumentException("[radius] must be greater than 0. Found [" + radius + "] in [" + name + "]");
         }
         this.radius = radius;
         return this;
@@ -158,8 +157,7 @@ public class GeoPointClusteringAggregationBuilder extends
 
     public GeoPointClusteringAggregationBuilder ratio(double ratio) {
         if (ratio > 2) {
-            throw new IllegalArgumentException(
-                    "[rati] must be lower or equal than 2. Found [" + ratio + "] in [" + name + "]");
+            throw new IllegalArgumentException("[rati] must be lower or equal than 2. Found [" + ratio + "] in [" + name + "]");
         }
         this.ratio = ratio;
         return this;
@@ -167,8 +165,7 @@ public class GeoPointClusteringAggregationBuilder extends
 
     public GeoPointClusteringAggregationBuilder size(int size) {
         if (size <= 0) {
-            throw new IllegalArgumentException(
-                    "[size] must be greater than 0. Found [" + size + "] in [" + name + "]");
+            throw new IllegalArgumentException("[size] must be greater than 0. Found [" + size + "] in [" + name + "]");
         }
         this.requiredSize = size;
         return this;
@@ -180,12 +177,11 @@ public class GeoPointClusteringAggregationBuilder extends
 
     public GeoPointClusteringAggregationBuilder shardSize(int shardSize) {
         if (shardSize <= 0) {
-            throw new IllegalArgumentException(
-                    "[shardSize] must be greater than 0. Found [" + shardSize + "] in [" + name + "]");
-            }
+            throw new IllegalArgumentException("[shardSize] must be greater than 0. Found [" + shardSize + "] in [" + name + "]");
+        }
         this.shardSize = shardSize;
         return this;
-        }
+    }
 
     /**
      * Builds the internal aggregator factory for the geo-point clustering aggregation.
@@ -201,10 +197,10 @@ public class GeoPointClusteringAggregationBuilder extends
      */
     @Override
     protected GeoPointClusteringAggregatorFactory innerBuild(
-            AggregationContext context,
-            ValuesSourceConfig config,
-            AggregatorFactory parent,
-            Builder subFactoriesBuilder
+        AggregationContext context,
+        ValuesSourceConfig config,
+        AggregatorFactory parent,
+        Builder subFactoriesBuilder
     ) throws IOException {
         int shardSize = this.shardSize;
 
@@ -218,8 +214,8 @@ public class GeoPointClusteringAggregationBuilder extends
 
         if (requiredSize <= 0 || shardSize <= 0) {
             throw new ElasticsearchException(
-                    "parameters [required_size] and [shard_size] must be >0 in geohash_grid aggregation [" +
-                            name + "].");
+                "parameters [required_size] and [shard_size] must be >0 in geohash_grid aggregation [" + name + "]."
+            );
         }
 
         if (shardSize < requiredSize) {
@@ -241,8 +237,19 @@ public class GeoPointClusteringAggregationBuilder extends
         // This precision is used to create geohash grid buckets before merging them.
         int precision = GeoUtils.geoHashLevelsForPrecision(radius);
 
-        return new GeoPointClusteringAggregatorFactory(name, config, precision, radius, ratio, requiredSize, shardSize,
-                context, parent, subFactoriesBuilder, metadata);
+        return new GeoPointClusteringAggregatorFactory(
+            name,
+            config,
+            precision,
+            radius,
+            ratio,
+            requiredSize,
+            shardSize,
+            context,
+            parent,
+            subFactoriesBuilder,
+            metadata
+        );
     }
 
     @Override
@@ -299,11 +306,23 @@ public class GeoPointClusteringAggregationBuilder extends
 
     public static void registerAggregators(ValuesSourceRegistry.Builder builder) {
         builder.register(
-                GeoPointClusteringAggregationBuilder.REGISTRY_KEY,
-                CoreValuesSourceType.GEOPOINT,
-                (name, factories, valuesSource, precision, radius, ratio, requiredSize,
-                 shardSize, context, parent, cardinality, metaData) -> null,
-                true);
+            GeoPointClusteringAggregationBuilder.REGISTRY_KEY,
+            CoreValuesSourceType.GEOPOINT,
+            (
+                name,
+                factories,
+                valuesSource,
+                precision,
+                radius,
+                ratio,
+                requiredSize,
+                shardSize,
+                context,
+                parent,
+                cardinality,
+                metaData) -> null,
+            true
+        );
     }
 
 }

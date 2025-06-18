@@ -150,6 +150,10 @@ Result:
 ### Build
 
 Built with Java 17 and Gradle 8.10.2 (use the packaged gradlew included in this repo if you want to build yourself).
+Apply spotless code formatting with:
+``` shell
+./gradlew spotlessApply
+```
 
 ### Development Environment Setup
 

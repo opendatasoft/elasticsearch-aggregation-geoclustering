@@ -74,8 +74,7 @@ public final class BucketReducer implements Releasable {
      * @return the weighted centroid as a {@link GeoPoint}
      */
     public GeoPoint getWeightedCentroid() {
-        return new GeoPoint(
-                centroidLat / count, centroidLon / count);
+        return new GeoPoint(centroidLat / count, centroidLon / count);
     }
 
     /**

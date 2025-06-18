@@ -12,6 +12,11 @@ buildscript {
     }
 }
 
+// the spotless plugin is dedicated to format the code
+plugins {
+    id("com.diffplug.spotless") version "7.0.3"
+}
+
 repositories {
     mavenCentral()
     mavenLocal()
@@ -35,6 +40,18 @@ esplugin {
     licenseFile = rootProject.file('LICENSE')
     noticeFile = rootProject.file('README.md')
 }
+
+// automatic formatting configuration (the same configuration as elasticsearch)
+spotless {
+    java {
+        importOrderFile('config/elastic.importorder') // import order file as exported from elastic
+        eclipse().configFile('config/formatterConfig.xml')
+        trimTrailingWhitespace()
+        target 'src/**/*.java'
+    }
+}
+
+check.dependsOn spotlessCheck
 
 // exclude junit from implementation to resolve a version conflict (but not from tests)
 configurations {
