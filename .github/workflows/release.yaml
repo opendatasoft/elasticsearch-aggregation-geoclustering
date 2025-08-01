@@ -1,0 +1,59 @@
+name: publish
+
+on:
+  push:
+    tags: ['v*']
+  release:
+    types: [published]
+
+jobs:
+  build-artifact:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tag Version Name Extraction
+        id: version
+        shell: bash
+        run: |
+          if [[ -n "${{ github.event.release.tag_name }}" ]]; then
+            # Relase Github
+            TAG_NAME="${{ github.event.release.tag_name }}"
+            echo "📋 Triggered by GitHub release: $TAG_NAME"
+          else
+            # Just a new tag
+            TAG_NAME=${GITHUB_REF#refs/tags/}
+            echo "🏷️ Triggered by Git tag: $TAG_NAME"
+          fi
+
+          # Get rid of the 'v', e.g. v8.18.1.0 -> 8.18.1.0
+          VERSION=${TAG_NAME#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: 21
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Java Compilation
+        run: ./gradlew -Pplugin_version=${{ steps.version.outputs.version }} clean assemble --no-daemon
+
+      - name: Upload Plugin Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: geopoint-clustering-aggregation-${{ steps.version.outputs.version }}
+          path: build/distributions/*.zip
+
+      - name: Attach ZIP to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: github.event.release.tag_name != ''
+        with:
+          files: build/distributions/geopoint-clustering-aggregation-${{ steps.version.outputs.version }}.zip
+          tag_name: ${{ github.event.release.tag_name }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
