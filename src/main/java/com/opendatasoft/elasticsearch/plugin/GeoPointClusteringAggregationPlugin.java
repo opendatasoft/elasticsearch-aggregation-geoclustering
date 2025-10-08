@@ -2,6 +2,7 @@ package com.opendatasoft.elasticsearch.plugin;
 
 import com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering.GeoPointClusteringAggregationBuilder;
 import com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering.InternalGeoPointClustering;
+
 import org.elasticsearch.plugins.Plugin;
 import org.elasticsearch.plugins.SearchPlugin;
 
@@ -13,12 +14,12 @@ public class GeoPointClusteringAggregationPlugin extends Plugin implements Searc
         ArrayList<SearchPlugin.AggregationSpec> r = new ArrayList<>();
 
         r.add(
-                new AggregationSpec(
-                        GeoPointClusteringAggregationBuilder.NAME,
-                        GeoPointClusteringAggregationBuilder::new,
-                        GeoPointClusteringAggregationBuilder::parse)
-                        .addResultReader(InternalGeoPointClustering::new)
-                        .setAggregatorRegistrar(GeoPointClusteringAggregationBuilder::registerAggregators)
+            new AggregationSpec(
+                GeoPointClusteringAggregationBuilder.NAME,
+                GeoPointClusteringAggregationBuilder::new,
+                GeoPointClusteringAggregationBuilder.PARSER
+            ).addResultReader(InternalGeoPointClustering::new)
+                .setAggregatorRegistrar(GeoPointClusteringAggregationBuilder::registerAggregators)
         );
 
         return r;

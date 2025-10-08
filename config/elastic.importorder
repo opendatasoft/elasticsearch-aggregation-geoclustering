@@ -1,0 +1,8 @@
+#source: elasticsearch/build-conventions/elastic.importorder
+#Eclipse configuration for import order for Elasticsearch
+0=
+1=com
+2=org
+3=java
+4=javax
+5=\#

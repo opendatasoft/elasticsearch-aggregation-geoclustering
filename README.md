@@ -16,7 +16,7 @@ Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticse
 ### Install
 
 Install plugin with:
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.28.0/geopoint-clustering-aggregation-7.17.28.0.zip`
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v8.19.4.0/geopoint-clustering-aggregation-8.19.4.0.zip`
 
 
 ### Quickstart
@@ -149,7 +149,11 @@ Result:
 
 ### Build
 
-Built with Java 17 and Gradle 8.10.2 (use the packaged gradlew included in this repo if you want to build yourself).
+Built with Java 17.
+Apply spotless code formatting with:
+``` shell
+./gradlew spotlessApply
+```
 
 ### Development Environment Setup
 
