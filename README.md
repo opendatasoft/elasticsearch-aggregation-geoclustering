@@ -16,7 +16,7 @@ Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticse
 ### Install
 
 Install plugin with:
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v7.17.28.0/geopoint-clustering-aggregation-7.17.28.0.zip`
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v8.19.4.0/geopoint-clustering-aggregation-8.19.4.0.zip`
 
 
 ### Quickstart
