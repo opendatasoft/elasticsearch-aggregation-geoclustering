@@ -14,15 +14,12 @@ buildscript {
 
 // the spotless plugin is dedicated to format the code
 plugins {
-    id("com.diffplug.spotless") version "7.0.3"
+    id("com.diffplug.spotless") version "7.0.4"
 }
 
 repositories {
-    mavenCentral()
     mavenLocal()
-    maven {
-        url "https://repo1.maven.org/maven2"
-    }
+    mavenCentral()
 }
 
 group = 'org.elasticsearch.plugin'
@@ -41,6 +38,31 @@ esplugin {
     noticeFile = rootProject.file('README.md')
 }
 
+// exclude junit from implementation to resolve a version conflict (but not from tests)
+//configurations {
+//    implementation {
+//        exclude(group: 'junit', module: 'junit')
+//    }
+//}
+
+def versions = org.elasticsearch.gradle.VersionProperties.versions
+dependencies {
+    implementation "org.elasticsearch:elasticsearch:${es_version}"
+    yamlRestTestImplementation "org.elasticsearch.test:framework:${es_version}"
+    yamlRestTestImplementation "org.elasticsearch.test:yaml-rest-runner:${es_version}"
+    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:${versions.log4j}"
+}
+
+// add -Xlint:deprecation to check the Elasticsearch deprecation warning at compile-time
+allprojects {
+    gradle.projectsEvaluated {
+        tasks.withType(JavaCompile) {
+            options.compilerArgs << "-Xlint:deprecation"
+            options.compilerArgs << "-Xlint:unchecked"
+        }
+    }
+}
+
 // automatic formatting configuration (the same configuration as elasticsearch)
 spotless {
     java {
@@ -53,24 +75,8 @@ spotless {
 
 check.dependsOn spotlessCheck
 
-// exclude junit from implementation to resolve a version conflict (but not from tests)
-configurations {
-    implementation {
-        exclude(group: 'junit', module: 'junit')
-    }
-}
-
-dependencies {
-    implementation "org.elasticsearch:elasticsearch:${es_version}"
-
-    yamlRestTestImplementation "org.elasticsearch.test:framework:${es_version}"
-    yamlRestTestImplementation "org.elasticsearch.test:yaml-rest-runner:${es_version}"
-    // required for ESClientYamlSuiteTestCase; fixes "RestApiYamlIT > initializationError"
-    yamlRestTestImplementation "org.apache.logging.log4j:log4j-core:2.17.1"
-}
-
 testClusters.configureEach {
-        // Use full distribution otherwise the geo_shape type is not fully handled
+        // Make sure the ES distribution used for rest tests is the "complete" variant
         testDistribution = 'DEFAULT'
 
         // Disable security (avoids annoying warnings/failures with xpack features)
