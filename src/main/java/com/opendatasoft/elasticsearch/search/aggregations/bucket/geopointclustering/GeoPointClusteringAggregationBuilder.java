@@ -301,7 +301,7 @@ public class GeoPointClusteringAggregationBuilder extends ValuesSourceAggregatio
 
     @Override
     public TransportVersion getMinimalSupportedVersion() {
-        return TransportVersions.ZERO;
+        return TransportVersion.zero();
     }
 
     public static void registerAggregators(ValuesSourceRegistry.Builder builder) {
