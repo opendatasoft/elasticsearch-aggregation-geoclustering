@@ -76,15 +76,18 @@ spotless {
 check.dependsOn spotlessCheck
 
 testClusters.configureEach {
-        // Make sure the ES distribution used for rest tests is the "complete" variant
-        testDistribution = 'DEFAULT'
+    // Make sure the ES distribution used for rest tests is the "complete" variant
+    testDistribution = 'DEFAULT'
 
-        // Disable security (avoids annoying warnings/failures with xpack features)
-        setting 'xpack.security.enabled', 'false'
+    // Disable security (avoids annoying warnings/failures with xpack features)
+    setting 'xpack.security.enabled', 'false'
 
-        // Logging levels for debugging: logs are located in build/testclusters/runTask-0/logs/
-        setting 'logger._root', 'DEBUG'
-        setting 'logger.org.elasticsearch.plugins', 'DEBUG'
-        setting 'logger.org.elasticsearch.cluster', 'DEBUG'
-        setting 'logger.org.elasticsearch.cluster.metadata', 'TRACE'
+    // Logging levels for debugging: logs are located in build/testclusters/runTask-0/logs/
+    setting 'logger._root', 'DEBUG'
+    setting 'logger.org.elasticsearch.plugins', 'DEBUG'
+    setting 'logger.org.elasticsearch.cluster', 'DEBUG'
+    setting 'logger.org.elasticsearch.cluster.metadata', 'TRACE'
+
+    // uncomment to enable remote JVM debugger for local dev
+    // jvmArgs "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=*:5007"
 }
