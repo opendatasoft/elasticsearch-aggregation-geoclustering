@@ -130,6 +130,24 @@ setup:
   - match: { aggregations.gc.buckets.0.doc_count: 15 }
   - match: { aggregations.gc.buckets.0.centroid.lat: 48.8468417795375 }
   - match: { aggregations.gc.buckets.0.centroid.lon: 2.331401154398918 }
+  # Trigger the cache, the values should not have change
+  - do:
+      search:
+        rest_total_hits_as_int: true
+        index: test
+        body:
+          {
+            "aggs":
+              {
+                "gc":
+                  { "geo_point_clustering": { "field": "point", "zoom": 1 } },
+              },
+          }
+  - match: { hits.total: 15 }
+  - length: { aggregations.gc.buckets: 1 }
+  - match: { aggregations.gc.buckets.0.doc_count: 15 }
+  - match: { aggregations.gc.buckets.0.centroid.lat: 48.8468417795375 }
+  - match: { aggregations.gc.buckets.0.centroid.lon: 2.331401154398918 }
 
 
 ---
