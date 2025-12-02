@@ -381,8 +381,12 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             // Compute new weighted centroid
             double newCentroidLat = (bucket.centroid.getLat() * bucket.docCount + potentialNeighbor.centroid.getLat()
                 * potentialNeighbor.docCount) / mergedDocCount;
-            double newCentroidLon = (bucket.centroid.getLon() * bucket.docCount + potentialNeighbor.centroid.getLon()
-                * potentialNeighbor.docCount) / mergedDocCount;
+            double newCentroidLon = computeWeightedCentroidLon(
+                bucket.centroid.getLon(),
+                bucket.docCount,
+                potentialNeighbor.centroid.getLon(),
+                potentialNeighbor.docCount
+            );
             bucket.centroid = new GeoPoint(newCentroidLat, newCentroidLon);
 
             // Update document count and reduce sub-aggregations
@@ -398,6 +402,37 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         // If not merged, check if it should be revisited later
         else if (revisit != null && ratio > 0 && neighborDistance / fixedRadius < ratio) {
             revisit.add(potentialNeighbor);
+        }
+    }
+
+    /**
+     * Computes the weighted centroid longitude, handling the antimeridian (±180°) correctly.
+     * When points are on opposite sides of the antimeridian, a simple average would place
+     * the centroid on the wrong side of the globe. This method detects such cases and
+     * adjusts the calculation accordingly.
+     */
+    private static double computeWeightedCentroidLon(double lon1, long weight1, double lon2, long weight2) {
+        long totalWeight = weight1 + weight2;
+
+        // Check if points are on opposite sides of the antimeridian
+        // If the difference is greater than 180°, they cross the antimeridian
+        double lonDiff = Math.abs(lon1 - lon2);
+        if (lonDiff > 180) {
+            // Normalize longitudes to [0, 360) for calculation
+            double normalizedLon1 = lon1 < 0 ? lon1 + 360 : lon1;
+            double normalizedLon2 = lon2 < 0 ? lon2 + 360 : lon2;
+
+            // Compute weighted average in normalized space
+            double weightedLon = (normalizedLon1 * weight1 + normalizedLon2 * weight2) / totalWeight;
+
+            // Convert back to [-180, 180] range
+            if (weightedLon > 180) {
+                weightedLon -= 360;
+            }
+            return weightedLon;
+        } else {
+            // Standard weighted average when not crossing antimeridian
+            return (lon1 * weight1 + lon2 * weight2) / totalWeight;
         }
     }
 
