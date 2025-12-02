@@ -1,6 +1,5 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
-import org.apache.lucene.geo.GeoEncodingUtils;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.GeoUtils;
 import org.elasticsearch.common.io.stream.StreamInput;
@@ -35,7 +34,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         protected long hashAsLong;
         protected GeoPoint centroid;
         protected long docCount;
-        protected InternalAggregations aggregations;  // sub-aggregations for this bucket
+        protected InternalAggregations aggregations; // sub-aggregations for this bucket
         protected boolean visited = false;
         protected Set<Long> geohashesList;
 
@@ -54,10 +53,13 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         private Bucket(StreamInput in) throws IOException {
             hashAsLong = in.readLong();
             docCount = in.readVLong();
-            final long hash = in.readLong();
-            centroid = new GeoPoint(decodeLatitude(hash), decodeLongitude(hash));
+            double lat = in.readDouble();
+            double lon = in.readDouble();
+            centroid = new GeoPoint(lat, lon);
             visited = in.readBoolean();
             aggregations = InternalAggregations.readFrom(in);
+            geohashesList = new HashSet<>();
+            geohashesList.add(hashAsLong);
         }
 
         /**
@@ -67,7 +69,8 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         public void writeTo(StreamOutput out) throws IOException {
             out.writeLong(hashAsLong);
             out.writeVLong(docCount);
-            out.writeLong(encodeLatLon(centroid.lat(), centroid.lon()));
+            out.writeDouble(centroid.lat());
+            out.writeDouble(centroid.lon());
             out.writeBoolean(visited);
             aggregations.writeTo(out);
         }
@@ -118,14 +121,13 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Bucket bucket = (Bucket) o;
-            return hashAsLong == bucket.hashAsLong && docCount == bucket.docCount && Objects.equals(aggregations, bucket.aggregations);
+            return (hashAsLong == bucket.hashAsLong && docCount == bucket.docCount && Objects.equals(aggregations, bucket.aggregations));
         }
 
         @Override
         public int hashCode() {
             return Objects.hash(hashAsLong, docCount, aggregations);
         }
-
     }
 
     private final double radius;
@@ -168,20 +170,6 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         out.writeDouble(ratio);
         writeSize(requiredSize, out);
         out.writeCollection((Collection<? extends Writeable>) buckets);
-    }
-
-    public static long encodeLatLon(double lat, double lon) {
-        return (Integer.toUnsignedLong(GeoEncodingUtils.encodeLatitude(lat)) << 32) | Integer.toUnsignedLong(
-            GeoEncodingUtils.encodeLongitude(lon)
-        );
-    }
-
-    public static double decodeLatitude(long encodedLatLon) {
-        return GeoEncodingUtils.decodeLatitude((int) (encodedLatLon >>> 32));
-    }
-
-    public static double decodeLongitude(long encodedLatLon) {
-        return GeoEncodingUtils.decodeLongitude((int) (encodedLatLon & 0xFFFFFFFFL));
     }
 
     protected Reader<Bucket> getBucketReader() {
@@ -254,7 +242,6 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
     @Override
     protected AggregatorReducer getLeaderReducer(AggregationReduceContext context, int size) {
         return new AggregatorReducer() {
-
             final LongObjectPagedHashMap<BucketReducer> bucketsReducer = new LongObjectPagedHashMap<>(size, context.bigArrays());
 
             /**
@@ -432,7 +419,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
     @Override
     public boolean equals(Object obj) {
         InternalGeoPointClustering other = (InternalGeoPointClustering) obj;
-        return Objects.equals(requiredSize, other.requiredSize) && Objects.equals(buckets, other.buckets);
+        return (Objects.equals(requiredSize, other.requiredSize) && Objects.equals(buckets, other.buckets));
     }
 
     static class BucketPriorityQueue<A, B extends Bucket> extends ObjectArrayPriorityQueue<A> {
