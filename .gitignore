@@ -99,3 +99,4 @@ gradle-app.setting
 ### VisualStudioCode template
 .vscode
 
+.settings/

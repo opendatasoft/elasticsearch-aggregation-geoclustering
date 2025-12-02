@@ -1,5 +1,11 @@
 package com.opendatasoft.elasticsearch.search.aggregations.bucket.geopointclustering;
 
+import static java.util.Collections.unmodifiableList;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.elasticsearch.common.geo.GeoPoint;
 import org.elasticsearch.common.geo.GeoUtils;
@@ -16,30 +22,30 @@ import org.elasticsearch.search.aggregations.support.SamplingContext;
 import org.elasticsearch.xcontent.ToXContent;
 import org.elasticsearch.xcontent.XContentBuilder;
 
-import java.io.IOException;
-import java.util.*;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+public class InternalGeoPointClustering
+    extends InternalMultiBucketAggregation<
+        InternalGeoPointClustering,
+        InternalGeoPointClustering.Bucket
+    >
+    implements GeoPointClustering {
 
-import static java.util.Collections.unmodifiableList;
-
-public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
-    InternalGeoPointClustering,
-    InternalGeoPointClustering.Bucket> implements GeoPointClustering {
-
-    static class Bucket extends InternalMultiBucketAggregation.InternalBucketWritable
-        implements
-            GeoPointClustering.Bucket,
-            Comparable<Bucket> {
+    static class Bucket
+        extends InternalMultiBucketAggregation.InternalBucketWritable
+        implements GeoPointClustering.Bucket, Comparable<Bucket> {
 
         protected long hashAsLong;
         protected GeoPoint centroid;
         protected long docCount;
-        protected InternalAggregations aggregations;  // sub-aggregations for this bucket
+        protected InternalAggregations aggregations; // sub-aggregations for this bucket
         protected boolean visited = false;
         protected Set<Long> geohashesList;
 
-        Bucket(long hashAsLong, GeoPoint centroid, long docCount, InternalAggregations aggregations) {
+        Bucket(
+            long hashAsLong,
+            GeoPoint centroid,
+            long docCount,
+            InternalAggregations aggregations
+        ) {
             this.docCount = docCount;
             this.centroid = centroid;
             this.aggregations = aggregations;
@@ -54,10 +60,13 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         private Bucket(StreamInput in) throws IOException {
             hashAsLong = in.readLong();
             docCount = in.readVLong();
-            final long hash = in.readLong();
-            centroid = new GeoPoint(decodeLatitude(hash), decodeLongitude(hash));
+            double lat = in.readDouble();
+            double lon = in.readDouble();
+            centroid = new GeoPoint(lat, lon);
             visited = in.readBoolean();
             aggregations = InternalAggregations.readFrom(in);
+            geohashesList = new HashSet<>();
+            geohashesList.add(hashAsLong);
         }
 
         /**
@@ -67,7 +76,8 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         public void writeTo(StreamOutput out) throws IOException {
             out.writeLong(hashAsLong);
             out.writeVLong(docCount);
-            out.writeLong(encodeLatLon(centroid.lat(), centroid.lon()));
+            out.writeDouble(centroid.lat());
+            out.writeDouble(centroid.lon());
             out.writeBoolean(visited);
             aggregations.writeTo(out);
         }
@@ -104,9 +114,18 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             return Long.compare(this.hashAsLong, other.hashAsLong);
         }
 
-        final void bucketToXContent(XContentBuilder builder, ToXContent.Params params) throws IOException {
+        final void bucketToXContent(
+            XContentBuilder builder,
+            ToXContent.Params params
+        ) throws IOException {
             builder.startObject();
-            builder.field("geohash_grids", geohashesList.stream().map(Geohash::stringEncode).collect(Collectors.toList()));
+            builder.field(
+                "geohash_grids",
+                geohashesList
+                    .stream()
+                    .map(Geohash::stringEncode)
+                    .collect(Collectors.toList())
+            );
             builder.field(CommonFields.DOC_COUNT.getPreferredName(), docCount);
             builder.field("centroid", centroid);
             aggregations.toXContentInternal(builder, params);
@@ -118,14 +137,17 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             Bucket bucket = (Bucket) o;
-            return hashAsLong == bucket.hashAsLong && docCount == bucket.docCount && Objects.equals(aggregations, bucket.aggregations);
+            return (
+                hashAsLong == bucket.hashAsLong &&
+                docCount == bucket.docCount &&
+                Objects.equals(aggregations, bucket.aggregations)
+            );
         }
 
         @Override
         public int hashCode() {
             return Objects.hash(hashAsLong, docCount, aggregations);
         }
-
     }
 
     private final double radius;
@@ -170,20 +192,6 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         out.writeCollection((Collection<? extends Writeable>) buckets);
     }
 
-    public static long encodeLatLon(double lat, double lon) {
-        return (Integer.toUnsignedLong(GeoEncodingUtils.encodeLatitude(lat)) << 32) | Integer.toUnsignedLong(
-            GeoEncodingUtils.encodeLongitude(lon)
-        );
-    }
-
-    public static double decodeLatitude(long encodedLatLon) {
-        return GeoEncodingUtils.decodeLatitude((int) (encodedLatLon >>> 32));
-    }
-
-    public static double decodeLongitude(long encodedLatLon) {
-        return GeoEncodingUtils.decodeLongitude((int) (encodedLatLon & 0xFFFFFFFFL));
-    }
-
     protected Reader<Bucket> getBucketReader() {
         return Bucket::new;
     }
@@ -195,16 +203,36 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
 
     @Override
     public InternalGeoPointClustering create(List<Bucket> buckets) {
-        return new InternalGeoPointClustering(this.name, this.radius, this.ratio, this.requiredSize, buckets, this.metadata);
+        return new InternalGeoPointClustering(
+            this.name,
+            this.radius,
+            this.ratio,
+            this.requiredSize,
+            buckets,
+            this.metadata
+        );
     }
 
-    public Bucket createBucket(long hashAsLong, GeoPoint centroid, long docCount, InternalAggregations aggregations) {
+    public Bucket createBucket(
+        long hashAsLong,
+        GeoPoint centroid,
+        long docCount,
+        InternalAggregations aggregations
+    ) {
         return new Bucket(hashAsLong, centroid, docCount, aggregations);
     }
 
     @Override
-    public Bucket createBucket(InternalAggregations aggregations, Bucket prototype) {
-        return new Bucket(prototype.hashAsLong, prototype.centroid, prototype.docCount, aggregations);
+    public Bucket createBucket(
+        InternalAggregations aggregations,
+        Bucket prototype
+    ) {
+        return new Bucket(
+            prototype.hashAsLong,
+            prototype.centroid,
+            prototype.docCount,
+            aggregations
+        );
     }
 
     @Override
@@ -222,7 +250,10 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
      * @param context           The aggregation reduce context for reducing internal aggregations.
      * @return A list of merged buckets representing the final clusters.
      */
-    private List<Bucket> mergeBuckets(Bucket[] candidateClusters, AggregationReduceContext context) {
+    private List<Bucket> mergeBuckets(
+        Bucket[] candidateClusters,
+        AggregationReduceContext context
+    ) {
         List<Bucket> finalClusters = new ArrayList<>();
         for (Bucket bucket : candidateClusters) {
             if (bucket.visited) {
@@ -252,10 +283,13 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
      * This reducer is used during the reduction phase of the multi-bucket aggregation GeoPointClustering.
      */
     @Override
-    protected AggregatorReducer getLeaderReducer(AggregationReduceContext context, int size) {
+    protected AggregatorReducer getLeaderReducer(
+        AggregationReduceContext context,
+        int size
+    ) {
         return new AggregatorReducer() {
-
-            final LongObjectPagedHashMap<BucketReducer> bucketsReducer = new LongObjectPagedHashMap<>(size, context.bigArrays());
+            final LongObjectPagedHashMap<BucketReducer> bucketsReducer =
+                new LongObjectPagedHashMap<>(size, context.bigArrays());
 
             /**
              * Accepts a partial aggregation result from a shard and accumulates its buckets into the corresponding reducers.
@@ -269,9 +303,12 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
              */
             @Override
             public void accept(InternalAggregation aggregation) {
-                final InternalGeoPointClustering grid = (InternalGeoPointClustering) aggregation;
+                final InternalGeoPointClustering grid =
+                    (InternalGeoPointClustering) aggregation;
                 for (Bucket bucket : grid.getBuckets()) {
-                    BucketReducer reducer = bucketsReducer.get(bucket.hashAsLong);
+                    BucketReducer reducer = bucketsReducer.get(
+                        bucket.hashAsLong
+                    );
                     if (reducer == null) {
                         reducer = new BucketReducer(bucket, context, size);
                         bucketsReducer.put(bucket.hashAsLong, reducer);
@@ -289,14 +326,28 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             public InternalAggregation get() {
                 if (buckets == null) {
                     // If no buckets were collected, return an empty aggregation
-                    return new InternalGeoPointClustering(getName(), radius, ratio, requiredSize, Collections.emptyList(), getMetadata());
+                    return new InternalGeoPointClustering(
+                        getName(),
+                        radius,
+                        ratio,
+                        requiredSize,
+                        Collections.emptyList(),
+                        getMetadata()
+                    );
                 }
 
                 final int size = Math.toIntExact(
-                    context.isFinalReduce() == false ? bucketsReducer.size() : Math.min(requiredSize, bucketsReducer.size())
+                    context.isFinalReduce() == false
+                        ? bucketsReducer.size()
+                        : Math.min(requiredSize, bucketsReducer.size())
                 );
                 try (
-                    BucketPriorityQueue<Bucket, Bucket> ordered = new BucketPriorityQueue<>(size, context.bigArrays(), Function.identity())
+                    BucketPriorityQueue<Bucket, Bucket> ordered =
+                        new BucketPriorityQueue<>(
+                            size,
+                            context.bigArrays(),
+                            Function.identity()
+                        )
                 ) {
                     // Populate the priority queue with the reduced clusters
                     bucketsReducer.forEach(entry -> {
@@ -312,7 +363,10 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
                     for (int i = (int) ordered.size() - 1; i >= 0; i--) {
                         clusters[i] = ordered.pop();
                     }
-                    List<Bucket> finalClusters = mergeBuckets(clusters, context);
+                    List<Bucket> finalClusters = mergeBuckets(
+                        clusters,
+                        context
+                    );
                     context.consumeBucketsAndMaybeBreak(finalClusters.size());
                     return create(finalClusters);
                 }
@@ -337,15 +391,21 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
      * @return A new InternalAggregation with scaled doc counts and finalized sub-aggregations.
      */
     @Override
-    public InternalAggregation finalizeSampling(SamplingContext samplingContext) {
+    public InternalAggregation finalizeSampling(
+        SamplingContext samplingContext
+    ) {
         return create(
-            buckets.stream()
-                .<Bucket>map(
-                    b -> this.createBucket(
+            buckets
+                .stream()
+                .<Bucket>map(b ->
+                    this.createBucket(
                         b.hashAsLong,
                         b.centroid,
                         samplingContext.scaleUp(b.docCount),
-                        InternalAggregations.finalizeSampling(b.aggregations, samplingContext)
+                        InternalAggregations.finalizeSampling(
+                            b.aggregations,
+                            samplingContext
+                        )
                     )
                 )
                 .toList()
@@ -363,7 +423,12 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
      * @param revisit          A list of buckets to potentially revisit for merging.
      * @param reduceContext    Context used to reduce internal aggregations during merging.
      */
-    private void computeDistance(Bucket bucket, Bucket potentialNeighbor, List<Bucket> revisit, AggregationReduceContext reduceContext) {
+    private void computeDistance(
+        Bucket bucket,
+        Bucket potentialNeighbor,
+        List<Bucket> revisit,
+        AggregationReduceContext reduceContext
+    ) {
         // Skip if this neighbor has already been processed
         if (potentialNeighbor.visited) {
             return;
@@ -378,7 +443,8 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
         );
 
         // Calculate average latitude to adjust radius based on Earth's curvature
-        double avgLat = (bucket.centroid.lat() + potentialNeighbor.centroid.lat()) / 2;
+        double avgLat =
+            (bucket.centroid.lat() + potentialNeighbor.centroid.lat()) / 2;
 
         // Apply latitude correction to the fixed clustering radius
         double fixedRadius = radius * Math.cos(Math.toRadians(avgLat));
@@ -392,10 +458,16 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             long mergedDocCount = bucket.docCount + potentialNeighbor.docCount;
 
             // Compute new weighted centroid
-            double newCentroidLat = (bucket.centroid.getLat() * bucket.docCount + potentialNeighbor.centroid.getLat()
-                * potentialNeighbor.docCount) / mergedDocCount;
-            double newCentroidLon = (bucket.centroid.getLon() * bucket.docCount + potentialNeighbor.centroid.getLon()
-                * potentialNeighbor.docCount) / mergedDocCount;
+            double newCentroidLat =
+                (bucket.centroid.getLat() * bucket.docCount +
+                    potentialNeighbor.centroid.getLat() *
+                    potentialNeighbor.docCount) /
+                mergedDocCount;
+            double newCentroidLon =
+                (bucket.centroid.getLon() * bucket.docCount +
+                    potentialNeighbor.centroid.getLon() *
+                    potentialNeighbor.docCount) /
+                mergedDocCount;
             bucket.centroid = new GeoPoint(newCentroidLat, newCentroidLon);
 
             // Update document count and reduce sub-aggregations
@@ -403,19 +475,29 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             List<InternalAggregations> aggregationsList = new ArrayList<>();
             aggregationsList.add(bucket.aggregations);
             aggregationsList.add(potentialNeighbor.aggregations);
-            bucket.aggregations = InternalAggregations.reduce(aggregationsList, reduceContext);
+            bucket.aggregations = InternalAggregations.reduce(
+                aggregationsList,
+                reduceContext
+            );
 
             // Track the geohash of the merged neighbor
             bucket.geohashesList.add(potentialNeighbor.hashAsLong);
         }
         // If not merged, check if it should be revisited later
-        else if (revisit != null && ratio > 0 && neighborDistance / fixedRadius < ratio) {
+        else if (
+            revisit != null &&
+            ratio > 0 &&
+            neighborDistance / fixedRadius < ratio
+        ) {
             revisit.add(potentialNeighbor);
         }
     }
 
     @Override
-    public XContentBuilder doXContentBody(XContentBuilder builder, Params params) throws IOException {
+    public XContentBuilder doXContentBody(
+        XContentBuilder builder,
+        Params params
+    ) throws IOException {
         builder.startArray(CommonFields.BUCKETS.getPreferredName());
         for (Bucket bucket : buckets) {
             bucket.bucketToXContent(builder, params);
@@ -432,14 +514,22 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
     @Override
     public boolean equals(Object obj) {
         InternalGeoPointClustering other = (InternalGeoPointClustering) obj;
-        return Objects.equals(requiredSize, other.requiredSize) && Objects.equals(buckets, other.buckets);
+        return (
+            Objects.equals(requiredSize, other.requiredSize) &&
+            Objects.equals(buckets, other.buckets)
+        );
     }
 
-    static class BucketPriorityQueue<A, B extends Bucket> extends ObjectArrayPriorityQueue<A> {
+    static class BucketPriorityQueue<A, B extends Bucket>
+        extends ObjectArrayPriorityQueue<A> {
 
         private final Function<A, B> bucketSupplier;
 
-        BucketPriorityQueue(int size, BigArrays bigArrays, Function<A, B> bucketSupplier) {
+        BucketPriorityQueue(
+            int size,
+            BigArrays bigArrays,
+            Function<A, B> bucketSupplier
+        ) {
             super(size, bigArrays);
             this.bucketSupplier = bucketSupplier;
         }
@@ -452,7 +542,9 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             if (cmp == 0) {
                 cmp = b2.compareTo(b1);
                 if (cmp == 0) {
-                    cmp = System.identityHashCode(o2) - System.identityHashCode(o1);
+                    cmp =
+                        System.identityHashCode(o2) -
+                        System.identityHashCode(o1);
                 }
             }
             return cmp > 0;
