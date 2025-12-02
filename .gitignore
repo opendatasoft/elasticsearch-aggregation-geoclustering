@@ -100,3 +100,4 @@ gradle-app.setting
 .vscode
 
 .settings/
+.project
