@@ -423,7 +423,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             double normalizedLon2 = lon2 < 0 ? lon2 + 360 : lon2;
 
             // Compute weighted average in normalized space
-            double weightedLon = (normalizedLon1 * weight1 + normalizedLon2 * weight2) / totalWeight;
+            double weightedLon = (normalizedLon1 * (double) weight1 + normalizedLon2 * (double) weight2) / (double) totalWeight;
 
             // Convert back to [-180, 180] range
             if (weightedLon > 180) {
@@ -432,7 +432,7 @@ public class InternalGeoPointClustering extends InternalMultiBucketAggregation<
             return weightedLon;
         } else {
             // Standard weighted average when not crossing antimeridian
-            return (lon1 * weight1 + lon2 * weight2) / totalWeight;
+            return ((lon1 * (double) weight1 + lon2 * (double) weight2) / (double) totalWeight);
         }
     }
 
