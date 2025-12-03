@@ -348,7 +348,7 @@ setup:
   - match: { aggregations.gc.buckets.0.centroid.lon: 2.3428986221551895 }
 
 ---
-"Test that that centroid calculation with points around the antimeridian is correct":
+"Test that that centroid calculation with points around the antimeridian is correct (negative result)":
   - do:
       indices.create:
         index: antimeridian_index
@@ -363,6 +363,7 @@ setup:
         index: antimeridian_index
         id: 1
         body: { "point": [-179.685, 66.138] }
+
   - do:
       index:
         index: antimeridian_index
@@ -386,3 +387,51 @@ setup:
 
   - match: { aggregations.gc.buckets.0.centroid.lat: 66.13799999468029 }
   - match: { aggregations.gc.buckets.0.centroid.lon: -179.8960350221023 }
+
+
+---
+"Test that that centroid calculation with points around the antimeridian is correct (positive result)":
+  - do:
+      indices.create:
+        index: antimeridian_index
+        body:
+          mappings:
+            "properties":
+              "point":
+                "type": "geo_point"
+
+  - do:
+      index:
+        index: antimeridian_index
+        id: 1
+        body: { "point": [-179.685, 66.138] }
+
+  - do:
+      index:
+        index: antimeridian_index
+        id: 2
+        body: { "point": [179.89293, 66.138] }
+
+  - do:
+      index:
+        index: antimeridian_index
+        id: 3
+        body: { "point": [179.5, 66.138] }
+
+  - do:
+      indices.refresh:
+        index: antimeridian_index
+
+  - do:
+      search:
+        index: antimeridian_index
+        body:
+          size: 0
+          aggs:
+            gc:
+              geo_point_clustering:
+                field: point
+                zoom: 1
+
+  - match: { aggregations.gc.buckets.0.centroid.lat: 66.13799999468029 }
+  - match: { aggregations.gc.buckets.0.centroid.lon: 179.9026433005929 }
