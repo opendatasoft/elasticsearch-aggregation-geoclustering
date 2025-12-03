@@ -14,9 +14,10 @@ Please note that [geo_shape data type](https://www.elastic.co/guide/en/elasticse
 
 ## Usage
 ### Install
+Currently supported Elasticsearch version is 8.x. 
 
 Install plugin with:
-`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v8.19.6.1/geopoint-clustering-aggregation-8.19.6.1.zip`
+`./bin/elasticsearch-plugin install https://github.com/opendatasoft/elasticsearch-aggregation-geoclustering/releases/download/v8.19.6.2/geopoint-clustering-aggregation-8.19.6.2.zip`
 
 
 ### Quickstart
